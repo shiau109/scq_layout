@@ -6,7 +6,6 @@ from kqcircuits.qubits.qubit import Qubit
 from kqcircuits.pya_resolver import pya
 from kqcircuits.util.refpoints import WaveguideToSimPort, JunctionSimPort
 
-
 class FloatingQubit(Qubit):
     """
     A two-island qubit, containing a coupler on the west edge and two separate qubit islands in the center
@@ -21,7 +20,9 @@ class FloatingQubit(Qubit):
     island2_r = Param(pdt.TypeDouble, "Second qubit island rounding radius", 50, unit="μm")
     island_sep = Param(pdt.TypeDouble, "Separation of two island", 60, unit="μm")
     island1_side_hole = Param(pdt.TypeList, "Width, height of the side hole (µm, µm)", [60, 20])
-
+    coupler_at_island2 = Param(pdt.TypeBoolean, "Put Location of coupler at island2", False)
+    rotate_qubit = Param(pdt.TypeDouble, "Rotate the qubit counterclockwise in degree", 0)
+    
 
     def build(self):
         # Qubit base
@@ -33,9 +34,17 @@ class FloatingQubit(Qubit):
         # Second island
         island2_region = self._build_island2()
 
-        self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(
-            ground_gap_region - island1_region - island2_region
-        )
+        # Coupler
+        coupler_region = self._build_coupler()
+
+        # Combine component together
+        region = ground_gap_region - island1_region - island2_region - coupler_region
+
+        # Rotate
+        region.transform(pya.CplxTrans(rot=self.rotate_qubit))
+
+        self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(region)
+        # pya.MessageBox.info("Debug", str(self.a), pya.MessageBox.Ok)
     
     def gap_region(self):
         ground_gap_points = [
@@ -49,7 +58,12 @@ class FloatingQubit(Qubit):
         ground_gap_region.round_corners(
             self.ground_gap_r / self.layout.dbu, self.ground_gap_r / self.layout.dbu, self.n
         )
-        return ground_gap_region
+
+        # Add coupler port
+        coupler_port_region, r = self._build_coupler_port()
+        ground_gap_region = ground_gap_region + coupler_port_region
+        ground_gap_region.round_corners(r / self.layout.dbu, r / self.layout.dbu, self.n)
+        return ground_gap_region + coupler_port_region
 
 
     def _build_island1(self):
@@ -89,6 +103,47 @@ class FloatingQubit(Qubit):
         return (island1_region - side_hole_region).round_corners(r / self.layout.dbu, r / self.layout.dbu, self.n)
     
     def _build_island2(self):
-        return self._build_island1().transform(pya.Trans(rot=180, mirrx=True, u = [0,0]))
+        t = pya.Trans(rot=45, u=[0, 0])
+        return self._build_island1().transform(pya.Trans.M0)
 
-    
+    def _build_coupler(self):
+        r = self.a / 2
+        island1_bottom = self.island_sep / 2
+        width = self.island1_side_hole[1] / 2 - r
+        coupler_polygon = pya.DPolygon(
+            [
+                pya.DPoint(-float(self.ground_gap[0]) / 2 - r - self.b,
+                           island1_bottom + float(self.island1_extent[1]) / 2 + r
+                ),
+                pya.DPoint(-float(self.island1_extent[0]) / 2 + float(self.island1_side_hole[0]) - width,
+                           island1_bottom + float(self.island1_extent[1]) / 2 + r
+                ),
+                pya.DPoint(-float(self.island1_extent[0]) / 2 + float(self.island1_side_hole[0]) - width,
+                           island1_bottom + float(self.island1_extent[1]) / 2 - r),
+                pya.DPoint(-float(self.ground_gap[0]) / 2 - r - self.b, 
+                           island1_bottom + float(self.island1_extent[1]) / 2 - r),
+            ]
+        )
+        coupler_region = pya.Region(coupler_polygon.to_itype(self.layout.dbu))
+        coupler_region.round_corners(r / self.layout.dbu, r / self.layout.dbu, self.n)
+        return coupler_region
+        
+    def _build_coupler_port(self):
+        island1_bottom = self.island_sep / 2
+        r = self.b
+        coupler_port_polygon = pya.DPolygon(
+            [
+                pya.DPoint(-float(self.ground_gap[0]) / 2,
+                           island1_bottom + float(self.island1_extent[1]) / 2 + self.a / 2 + r
+                ),
+                pya.DPoint(-float(self.ground_gap[0]) / 2 - r,
+                           island1_bottom + float(self.island1_extent[1]) / 2 + self.a / 2 + r
+                ),
+                pya.DPoint(-float(self.ground_gap[0]) / 2 - r,
+                           island1_bottom + float(self.island1_extent[1]) / 2 - self.a / 2 - r),
+                pya.DPoint(-float(self.ground_gap[0]) / 2, 
+                           island1_bottom + float(self.island1_extent[1]) / 2 - self.a / 2 - r),
+            ]
+        )
+        coupler_port_region = pya.Region(coupler_port_polygon.to_itype(self.layout.dbu))
+        return coupler_port_region, r
