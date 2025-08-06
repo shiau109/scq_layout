@@ -14,19 +14,19 @@ class FloatingQubit(Qubit):
     
     """
 
-    ground_gap = Param(pdt.TypeList, "Width, height of the ground gap (µm, µm)", [600, 700])
-    ground_gap_r = Param(pdt.TypeDouble, "Ground gap rounding radius", 50, unit="μm")
-    island1_extent = Param(pdt.TypeList, "Width, height of the first qubit island (µm, µm)", [500, 100])
-    island1_r = Param(pdt.TypeDouble, "First qubit island rounding radius", 50, unit="μm")
-    island2_extent = Param(pdt.TypeList, "Width, height of the second qubit island (µm, µm)", [500, 100])
-    island2_r = Param(pdt.TypeDouble, "Second qubit island rounding radius", 50, unit="μm")
-    island_sep = Param(pdt.TypeDouble, "Separation of two island", 60, unit="μm")
-    island1_side_hole = Param(pdt.TypeList, "Width, height of the side hole (µm, µm)", [60, 20])
+    ground_gap = Param(pdt.TypeList, "Width, height of the ground gap (µm, µm)", [800, 600])
+    ground_gap_r = Param(pdt.TypeDouble, "Ground gap rounding radius", 95, unit="μm")
+    island1_extent = Param(pdt.TypeList, "Width, height of the first qubit island (µm, µm)", [680, 175])
+    island1_r = Param(pdt.TypeDouble, "First qubit island rounding radius", 87.5, unit="μm")
+    island2_extent = Param(pdt.TypeList, "Width, height of the second qubit island (µm, µm)", [680, 175])
+    island2_r = Param(pdt.TypeDouble, "Second qubit island rounding radius", 87.5, unit="μm")
+    island_sep = Param(pdt.TypeDouble, "Separation of two island", 30, unit="μm")
+    island1_side_hole = Param(pdt.TypeList, "Width, height of the side hole (µm, µm)", [130, 30])
     coupler_at_island2 = Param(pdt.TypeBoolean, "Put Location of coupler at island2", False)
     rotate_qubit = Param(pdt.TypeDouble, "Rotate the qubit counterclockwise in degree", 0)
-    squid_sep = Param(pdt.TypeDouble, "Distance from SQUID to ground plane", 10)
-    squid_arm_position1 = Param(pdt.TypeList, "Coordinate of squid arm at island1 (w.r.t. corner)", [25, 25])
-    squid_arm_position2 = Param(pdt.TypeList, "Coordinate of squid arm at island2 (w.r.t. corner)", [25, 25])
+    squid_sep = Param(pdt.TypeDouble, "Distance from SQUID to ground plane", 7)
+    squid_arm_position1 = Param(pdt.TypeList, "Coordinate of squid arm at island1 (w.r.t. corner)", [28, 55])
+    squid_arm_position2 = Param(pdt.TypeList, "Coordinate of squid arm at island2 (w.r.t. corner)", [28, 55])
     
 
     def build(self):
@@ -50,7 +50,7 @@ class FloatingQubit(Qubit):
         self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(region)
 
         # Add SQUID
-        self.cell.insert(self._add_squid())       
+        self.cell.insert(self._add_squid().transform(pya.CplxTrans(rot=self.rotate_qubit)))       
     
     def gap_region(self):
         ground_gap_points = [
@@ -132,6 +132,8 @@ class FloatingQubit(Qubit):
         )
         coupler_region = pya.Region(coupler_polygon.to_itype(self.layout.dbu))
         coupler_region.round_corners(r / self.layout.dbu, r / self.layout.dbu, self.n)
+        if self.coupler_at_island2:
+            coupler_region = coupler_region.transform(pya.Trans.M0)
         return coupler_region
         
     def _build_coupler_port(self):
@@ -157,6 +159,8 @@ class FloatingQubit(Qubit):
             pya.DPoint(-float(self.ground_gap[0]) / 2 - r, island1_bottom + float(self.island1_extent[1]) / 2),
             direction=pya.DVector(pya.DPoint(1, 0)),
         )
+        if self.coupler_at_island2:
+            coupler_port_region = coupler_port_region.transform(pya.Trans.M0)
         return coupler_port_region, r
     
     def _add_squid(self):

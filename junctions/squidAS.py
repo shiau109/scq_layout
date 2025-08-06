@@ -10,13 +10,13 @@ class SquidAS(Junction):
     """
     
 
-    JJ_width = Param(pdt.TypeDouble, "Width of Josephson junction", 0.1, unit="μm")
-    JJ_overshoot = Param(pdt.TypeDouble, "Overshoot of Josephson junction", 0.3, unit="μm")
+    JJ_width = Param(pdt.TypeDouble, "Width of Josephson junction", 0.09, unit="μm")
+    JJ_overshoot = Param(pdt.TypeDouble, "Overshoot of Josephson junction", 1, unit="μm")
     JJ_length = Param(pdt.TypeDouble, "Length of Josephson junction", 3, unit="μm")
     finger_width = Param(pdt.TypeDouble, "Width of finger (holding Josephson junction)", 2, unit="μm")
-    finger_sep = Param(pdt.TypeDouble, "Separation between two fingers (same for up/down)", 30, unit="μm")
-    up_finger_length = Param(pdt.TypeDouble, "Length of up finger (holding Josephson junction)", 12, unit="μm")
-    down_finger_length = Param(pdt.TypeDouble, "Length of down finger (holding Josephson junction)", 15, unit="μm")
+    finger_sep = Param(pdt.TypeDouble, "Separation between two fingers (same for up/down)", 28, unit="μm")
+    up_finger_length = Param(pdt.TypeDouble, "Length of up finger (holding Josephson junction)", 11, unit="μm")
+    down_finger_length = Param(pdt.TypeDouble, "Length of down finger (holding Josephson junction)", 14, unit="μm")
     arm_position = Param(pdt.TypeDouble, "Position of arm (0: leftmost; 1: rightmost)", 0.2)
     up_arm_connect_pt = Param(pdt.TypeList, "Coordinate of up arm starting point (µm, µm)", [-50, 50])
     down_arm_connect_pt = Param(pdt.TypeList, "Coordinate of down arm starting point (µm, µm)", [-50, -50])
