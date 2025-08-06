@@ -1,18 +1,20 @@
 import math
 
 from kqcircuits.elements.element import Element
-from kqcircuits.util.parameters import Param, pdt
+from kqcircuits.util.parameters import Param, pdt, add_parameters_from
 from kqcircuits.qubits.qubit import Qubit
 from kqcircuits.pya_resolver import pya
 from kqcircuits.util.refpoints import WaveguideToSimPort, JunctionSimPort
+from my_package.junctions.squidAS import SquidAS
 
+#@add_parameters_from(SquidAS)
 class FloatingQubit(Qubit):
     """
     A two-island qubit, containing a coupler on the west edge and two separate qubit islands in the center
     
     """
 
-    ground_gap = Param(pdt.TypeList, "Width, height of the ground gap (µm, µm)", [700, 700])
+    ground_gap = Param(pdt.TypeList, "Width, height of the ground gap (µm, µm)", [600, 700])
     ground_gap_r = Param(pdt.TypeDouble, "Ground gap rounding radius", 50, unit="μm")
     island1_extent = Param(pdt.TypeList, "Width, height of the first qubit island (µm, µm)", [500, 100])
     island1_r = Param(pdt.TypeDouble, "First qubit island rounding radius", 50, unit="μm")
@@ -22,6 +24,9 @@ class FloatingQubit(Qubit):
     island1_side_hole = Param(pdt.TypeList, "Width, height of the side hole (µm, µm)", [60, 20])
     coupler_at_island2 = Param(pdt.TypeBoolean, "Put Location of coupler at island2", False)
     rotate_qubit = Param(pdt.TypeDouble, "Rotate the qubit counterclockwise in degree", 0)
+    squid_sep = Param(pdt.TypeDouble, "Distance from SQUID to ground plane", 10)
+    squid_arm_position1 = Param(pdt.TypeList, "Coordinate of squid arm at island1 (w.r.t. corner)", [25, 25])
+    squid_arm_position2 = Param(pdt.TypeList, "Coordinate of squid arm at island2 (w.r.t. corner)", [25, 25])
     
 
     def build(self):
@@ -42,9 +47,10 @@ class FloatingQubit(Qubit):
 
         # Rotate
         region.transform(pya.CplxTrans(rot=self.rotate_qubit))
-
         self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(region)
-        # pya.MessageBox.info("Debug", str(self.a), pya.MessageBox.Ok)
+
+        # Add SQUID
+        self.cell.insert(self._add_squid())       
     
     def gap_region(self):
         ground_gap_points = [
@@ -146,4 +152,16 @@ class FloatingQubit(Qubit):
             ]
         )
         coupler_port_region = pya.Region(coupler_port_polygon.to_itype(self.layout.dbu))
+        self.add_port(
+            "coupler",
+            pya.DPoint(-float(self.ground_gap[0]) / 2 - r, island1_bottom + float(self.island1_extent[1]) / 2),
+            direction=pya.DVector(pya.DPoint(1, 0)),
+        )
         return coupler_port_region, r
+    
+    def _add_squid(self):
+        transx = self.ground_gap[0] / 2 - self.squid_sep
+        upt = [self.island1_extent[0] / 2 - self.squid_arm_position1[0] - transx, self.island_sep / 2 + self.squid_arm_position1[1]]
+        dpt = [self.island2_extent[0] / 2 - self.squid_arm_position2[0] - transx, -self.island_sep / 2 - self.squid_arm_position2[1]]
+        squid_cell = SquidAS.create(self.layout, up_arm_connect_pt=upt, down_arm_connect_pt=dpt)
+        return pya.DCellInstArray(squid_cell.cell_index(), pya.DTrans(transx, 0))
