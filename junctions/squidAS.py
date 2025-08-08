@@ -1,10 +1,10 @@
 from kqcircuits.elements.element import Element
 from kqcircuits.util.parameters import Param, pdt
-from kqcircuits.qubits.qubit import Junction
+from kqcircuits.scq_layout.aslib import ASlib
 from kqcircuits.pya_resolver import pya
 
 
-class SquidAS(Junction):
+class SquidAS(ASlib):
     """
     The PCell declaration for a Manhattan style SQUID.
     """

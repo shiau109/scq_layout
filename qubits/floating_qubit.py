@@ -2,13 +2,13 @@ import math
 
 from kqcircuits.elements.element import Element
 from kqcircuits.util.parameters import Param, pdt, add_parameters_from
-from kqcircuits.qubits.qubit import Qubit
+from kqcircuits.scq_layout.aslib import ASlib
 from kqcircuits.pya_resolver import pya
 from kqcircuits.util.refpoints import WaveguideToSimPort, JunctionSimPort
-from my_package.junctions.squidAS import SquidAS
+from kqcircuits.scq_layout.junctions.squidAS import SquidAS
 
 #@add_parameters_from(SquidAS)
-class FloatingQubit(Qubit):
+class FloatingQubit(ASlib):
     """
     A two-island qubit, containing a coupler on the west edge and two separate qubit islands in the center
     
