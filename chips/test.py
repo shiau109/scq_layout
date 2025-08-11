@@ -14,17 +14,23 @@ class TestChip(ASlib):
     readout_sep = Param(pdt.TypeDouble, "Ground gap rounding radius", 13, unit="μm")
     purcell_length = Param(pdt.TypeDouble, "Purcell resonator lengths", 12000, unit="μm")
     def build(self):
-        self.insert_cell(Launcher, pya.Trans(-4950+385+50, 3000) * pya.Trans.R180, "L1", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(4950-385-50, -3000), "L2", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
         self._produce_frame()
         self._produce_driveline()
         self.insert_cell(FloatingQubit, pya.Trans(0, 2500) * pya.Trans.R90, "Q0")
+        self._produce_fluxline()
+        self._produce_xyline()
         self._produce_readout_resonator(self.refpoints[f"Q0_port_coupler"], 6000)
 
     def _produce_frame(self):
         box = pya.DBox(-4950, -4950, 4950, 4950)
         region = pya.Region(box.to_itype(self.layout.dbu))
         self.cell.shapes(self.get_layer("ground_grid_avoidance")).insert(region)
+
+        # Launchers
+        self.insert_cell(Launcher, pya.Trans(-4950+385+50, 3000) * pya.Trans.R180, "L1", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        self.insert_cell(Launcher, pya.Trans(4950-385-50, -3000), "L2", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        self.insert_cell(Launcher, pya.Trans(-1000, 4950-385-50) * pya.Trans.R90, "L3", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        self.insert_cell(Launcher, pya.Trans(1000, 4950-385-50) * pya.Trans.R90, "L4", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
 
     def _produce_driveline(self):
         x_twist_1, x_twist_2 = -4000, 4000
@@ -59,6 +65,27 @@ class TestChip(ASlib):
                    Node(self.refpoints[f"L2_base"])])        
        
         
+    def _produce_fluxline(self):
+        self.insert_cell(
+            WaveguideComposite,
+            nodes=[Node(self.refpoints[f"L4_base"]),
+                   Node(pya.DPoint(self.refpoints[f"L4_base"].x, self.refpoints[f"L4_base"].y - 150)),
+                   Node(pya.DPoint(self.refpoints[f"Q0_port_fluxline"].x, self.refpoints[f"L4_base"].y - 150)),
+                   Node(self.refpoints[f"Q0_port_fluxline"])
+                   ])
+    
+    def _produce_xyline(self):
+        offset = 100
+        self.insert_cell(
+            WaveguideComposite,
+            nodes=[Node(self.refpoints[f"L3_base"]),
+                   Node(pya.DPoint(self.refpoints[f"L3_base"].x, self.refpoints[f"L3_base"].y - 150)),
+                   Node(pya.DPoint(self.refpoints[f"Q0_port_xyline"].x - offset, self.refpoints[f"L3_base"].y - 150)),
+                   Node(pya.DPoint(self.refpoints[f"Q0_port_xyline"].x - offset, self.refpoints[f"Q0_port_xyline"].y + 200)),
+                   Node(pya.DPoint(self.refpoints[f"Q0_port_xyline"].x, self.refpoints[f"Q0_port_xyline"].y + 100)),
+                   Node(self.refpoints[f"Q0_port_xyline"])
+                   ])
+
     def _produce_readout_resonator(self, qport, length):
         w = 250
         h = 120

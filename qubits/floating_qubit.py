@@ -176,14 +176,19 @@ class FloatingQubit(ASlib):
         transx = self.ground_gap[0] / 2 - self.squid_sep
         upt = [self.island1_extent[0] / 2 - self.squid_arm_position1[0] - transx, self.island_sep / 2 + self.squid_arm_position1[1]]
         dpt = [self.island2_extent[0] / 2 - self.squid_arm_position2[0] - transx, -self.island_sep / 2 - self.squid_arm_position2[1]]
-        squid_cell = SquidAS.create(self.layout, up_arm_connect_pt=upt, down_arm_connect_pt=dpt)
-        return pya.DCellInstArray(squid_cell.cell_index(), pya.DTrans(transx, 0))
+        cell = self.add_element(SquidAS, up_arm_connect_pt=upt, down_arm_connect_pt=dpt)
+        cell_inst, _ = self.insert_cell(cell, pya.DTrans(transx, 0))
+        return cell_inst
     
     def _add_fluxline(self):
-        squid_cell = FluxLineT.create(self.layout)
-        return pya.DCellInstArray(squid_cell.cell_index(), pya.DTrans(self.ground_gap[0] / 2 + self.fluxline_gap_width, self.fluxline_offset))
+        cell = self.add_element(FluxLineT)
+        cell_inst, _ = self.insert_cell(cell, pya.DTrans(self.ground_gap[0] / 2 + self.fluxline_gap_width, self.fluxline_offset))
+        self.copy_port("fluxline", cell_inst)
+        return cell_inst
     
     def _add_xyline(self):
         island1_bottom = self.island_sep / 2
-        squid_cell = XyLine.create(self.layout)
-        return pya.DCellInstArray(squid_cell.cell_index(), pya.DTrans(self.ground_gap[0] / 2, island1_bottom + float(self.island1_extent[1]) / 2))
+        cell = self.add_element(XyLine)
+        cell_inst, _ = self.insert_cell(cell, pya.DTrans(self.ground_gap[0] / 2, island1_bottom + float(self.island1_extent[1]) / 2))
+        self.copy_port("xyline", cell_inst)
+        return cell_inst
