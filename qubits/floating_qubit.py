@@ -24,7 +24,6 @@ class FloatingQubit(ASlib):
     island_sep = Param(pdt.TypeDouble, "Separation of two island", 30, unit="μm")
     island1_side_hole = Param(pdt.TypeList, "Width, height of the side hole (µm, µm)", [130, 30])
     coupler_at_island2 = Param(pdt.TypeBoolean, "Put Location of coupler at island2", False)
-    rotate_qubit = Param(pdt.TypeDouble, "Rotate the qubit counterclockwise in degree", 0)
     squid_sep = Param(pdt.TypeDouble, "Distance from SQUID to ground plane", 7)
     squid_arm_position1 = Param(pdt.TypeList, "Coordinate of squid arm at island1 (w.r.t. corner)", [28, 55])
     squid_arm_position2 = Param(pdt.TypeList, "Coordinate of squid arm at island2 (w.r.t. corner)", [28, 55])
@@ -49,12 +48,11 @@ class FloatingQubit(ASlib):
         # Combine component together
         region = ground_gap_region - island1_region - island2_region - coupler_region
 
-        # Rotate
-        region.transform(pya.CplxTrans(rot=self.rotate_qubit))
+        # Add region
         self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(region)
 
         # Add SQUID
-        self.cell.insert(self._add_squid().transform(pya.CplxTrans(rot=self.rotate_qubit)))       
+        self.cell.insert(self._add_squid())       
 
         # Add flux line
         self.cell.insert(self._add_fluxline())

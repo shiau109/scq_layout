@@ -24,8 +24,8 @@ class FluxLineT(ASlib):
             pya.DPoint(0, self.fluxline_throat[1] / 2),
             pya.DPoint(0, self.fluxline_throat[1] / 2 + self.fluxline_extend),
             pya.DPoint(self.b, self.fluxline_throat[1] / 2 + self.fluxline_extend),
-            pya.DPoint(self.b, self.fluxline_throat[1] / 2 + self.a / 2 + self.b),
-            pya.DPoint(self.fluxline_throat[0] + self.fluxline_taper, self.fluxline_throat[1] / 2 + self.a / 2 + self.b),
+            pya.DPoint(self.b, self.a / 2 + self.b),
+            pya.DPoint(self.fluxline_throat[0] + self.fluxline_taper, self.a / 2 + self.b),
             pya.DPoint(self.fluxline_throat[0] + self.fluxline_taper, self.a / 2),
             pya.DPoint(self.fluxline_throat[0], self.fluxline_throat[1] / 2),
         ]
