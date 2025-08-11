@@ -6,6 +6,7 @@ from kqcircuits.scq_layout.aslib import ASlib
 from kqcircuits.pya_resolver import pya
 from kqcircuits.util.refpoints import WaveguideToSimPort, JunctionSimPort
 from kqcircuits.scq_layout.junctions.squidAS import SquidAS
+from kqcircuits.scq_layout.elements.flux_line import FluxLineT
 
 #@add_parameters_from(SquidAS)
 class FloatingQubit(ASlib):
@@ -27,6 +28,9 @@ class FloatingQubit(ASlib):
     squid_sep = Param(pdt.TypeDouble, "Distance from SQUID to ground plane", 7)
     squid_arm_position1 = Param(pdt.TypeList, "Coordinate of squid arm at island1 (w.r.t. corner)", [28, 55])
     squid_arm_position2 = Param(pdt.TypeList, "Coordinate of squid arm at island2 (w.r.t. corner)", [28, 55])
+
+    fluxline_offset = Param(pdt.TypeDouble, "Offset from squid center", -18, unit="μm")
+    fluxline_gap_width = Param(pdt.TypeDouble, "Gap between fluxline and qubit", 6, unit="μm")
     
 
     def build(self):
@@ -51,6 +55,9 @@ class FloatingQubit(ASlib):
 
         # Add SQUID
         self.cell.insert(self._add_squid().transform(pya.CplxTrans(rot=self.rotate_qubit)))       
+
+        # Add flux line
+        self.cell.insert(self._add_fluxline())
     
     def gap_region(self):
         ground_gap_points = [
@@ -157,7 +164,7 @@ class FloatingQubit(ASlib):
         self.add_port(
             "coupler",
             pya.DPoint(-float(self.ground_gap[0]) / 2 - r, island1_bottom + float(self.island1_extent[1]) / 2),
-            direction=pya.DVector(pya.DPoint(1, 0)),
+            direction=pya.DVector(pya.DPoint(-1, 0)),
         )
         if self.coupler_at_island2:
             coupler_port_region = coupler_port_region.transform(pya.Trans.M0)
@@ -169,3 +176,7 @@ class FloatingQubit(ASlib):
         dpt = [self.island2_extent[0] / 2 - self.squid_arm_position2[0] - transx, -self.island_sep / 2 - self.squid_arm_position2[1]]
         squid_cell = SquidAS.create(self.layout, up_arm_connect_pt=upt, down_arm_connect_pt=dpt)
         return pya.DCellInstArray(squid_cell.cell_index(), pya.DTrans(transx, 0))
+    
+    def _add_fluxline(self):
+        squid_cell = FluxLineT.create(self.layout)
+        return pya.DCellInstArray(squid_cell.cell_index(), pya.DTrans(self.ground_gap[0] / 2 + self.fluxline_gap_width, self.fluxline_offset))
