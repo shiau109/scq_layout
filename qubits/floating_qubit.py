@@ -7,6 +7,7 @@ from kqcircuits.pya_resolver import pya
 from kqcircuits.util.refpoints import WaveguideToSimPort, JunctionSimPort
 from kqcircuits.scq_layout.junctions.squidAS import SquidAS
 from kqcircuits.scq_layout.elements.flux_line import FluxLineT
+from kqcircuits.scq_layout.elements.xy_line import XyLine
 
 #@add_parameters_from(SquidAS)
 class FloatingQubit(ASlib):
@@ -56,6 +57,9 @@ class FloatingQubit(ASlib):
 
         # Add flux line
         self.cell.insert(self._add_fluxline())
+
+        # Add xy line
+        self.cell.insert(self._add_xyline())
     
     def gap_region(self):
         ground_gap_points = [
@@ -178,3 +182,8 @@ class FloatingQubit(ASlib):
     def _add_fluxline(self):
         squid_cell = FluxLineT.create(self.layout)
         return pya.DCellInstArray(squid_cell.cell_index(), pya.DTrans(self.ground_gap[0] / 2 + self.fluxline_gap_width, self.fluxline_offset))
+    
+    def _add_xyline(self):
+        island1_bottom = self.island_sep / 2
+        squid_cell = XyLine.create(self.layout)
+        return pya.DCellInstArray(squid_cell.cell_index(), pya.DTrans(self.ground_gap[0] / 2, island1_bottom + float(self.island1_extent[1]) / 2))
