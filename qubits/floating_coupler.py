@@ -116,9 +116,9 @@ class FloatingCoupler(ASlib):
     
     def _build_island2(self):
         if self.symmetric:
-            return self._build_island1()[0].transform(pya.Trans.M0 * pya.Trans.R90), pya.Trans.M0 * pya.Trans.R90 * self._build_island1()[1]
+            return self._build_island1()[0].transform(pya.DTrans.M0 * pya.DTrans.R90), pya.DTrans.M0 * pya.DTrans.R90 * self._build_island1()[1]
         else:
-            return self._build_island1()[0].transform(pya.Trans.R180), pya.Trans.R180 * self._build_island1()[1]
+            return self._build_island1()[0].transform(pya.DTrans.R180), pya.DTrans.R180 * self._build_island1()[1]
 
         
     def _build_qubit1(self):
@@ -140,9 +140,9 @@ class FloatingCoupler(ASlib):
 
     def _build_qubit2(self):
         if self.symmetric:
-            return self._build_qubit1().transform(pya.Trans.M0 * pya.Trans.R90)
+            return self._build_qubit1().transform(pya.DTrans.M0 * pya.DTrans.R90)
         else:
-            return self._build_qubit1().transform(pya.Trans.R180)
+            return self._build_qubit1().transform(pya.DTrans.R180)
 
     
     def _add_squid(self):
