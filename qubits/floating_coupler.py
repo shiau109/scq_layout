@@ -8,6 +8,7 @@ from kqcircuits.util.refpoints import WaveguideToSimPort, JunctionSimPort
 from kqcircuits.scq_layout.junctions.squidAS import SquidAS
 from kqcircuits.scq_layout.elements.flux_line import FluxLineT
 from kqcircuits.scq_layout.elements.xy_line import XyLine
+from kqcircuits.util.geometry_helper import force_rounded_corners
 
 #@add_parameters_from(SquidAS)
 class FloatingCoupler(ASlib):
@@ -24,6 +25,7 @@ class FloatingCoupler(ASlib):
     island1_length = Param(pdt.TypeDouble, "Length of the qubit island that couple to qubit", 230, unit="μm")
     island_sep = Param(pdt.TypeDouble, "Separation of two island", 30, unit="μm")
     symmetric = Param(pdt.TypeBoolean, "Whether the coupler is symmetric", False)
+    align_offset = Param(pdt.TypeDouble, "Separation of its alignment to qubit", 25, unit="μm")
     fluxline_offset = Param(pdt.TypeDouble, "Offset from squid center", -18, unit="μm")
     fluxline_gap_width = Param(pdt.TypeDouble, "Gap between fluxline and qubit", 6, unit="μm")
     
@@ -45,7 +47,7 @@ class FloatingCoupler(ASlib):
         qubit2_region = self._build_qubit2()
 
         ground_gap_region += qubit1_region + qubit2_region
-        ground_gap_region.round_corners(self.ground_gap_r / self.layout.dbu, self.ground_gap_r / self.layout.dbu, self.n)
+        ground_gap_region = force_rounded_corners(ground_gap_region, self.ground_gap_r / self.layout.dbu, self.ground_gap_r / self.layout.dbu, self.n)
 
         # Combine component together
         region = ground_gap_region - island1_region - island2_region - qubit1_region - qubit2_region
@@ -104,10 +106,11 @@ class FloatingCoupler(ASlib):
         nodes.append(pya.DPoint(nodes[-1].x + (self.island1_extent[0] - self.island1_arm[0]) / 2**1.5, nodes[-1].y - (self.island1_extent[0] - self.island1_arm[0]) / 2**1.5))
         nodes.append(pya.DPoint(nodes[-1].x + self.island1_extent[1] / 2**0.5, nodes[-1].y + self.island1_extent[1] / 2**0.5))
 
-        #nodes = [pya.DPoint(node) for node in nodes]
         island1_polygon = pya.DPolygon(nodes)
         island1_region = pya.Region(island1_polygon.to_itype(self.layout.dbu))
         island1_region.round_corners(self.island1_r / self.layout.dbu, self.island1_r / self.layout.dbu, self.n)
+
+        nodes[4].y -= self.align_offset
 
         return island1_region, nodes[4]
     
@@ -124,7 +127,7 @@ class FloatingCoupler(ASlib):
             [
                 pya.DPoint(coord.x, coord.y),
                 pya.DPoint(coord.x - 1000, coord.y),
-                pya.DPoint(coord.x - 1000, coord.y - 1000),
+                pya.DPoint(coord.x - 1000, coord.y),
                 pya.DPoint(coord.x, coord.y - 1000),
             ]
         )
