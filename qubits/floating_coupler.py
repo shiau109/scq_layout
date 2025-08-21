@@ -26,6 +26,8 @@ class FloatingCoupler(ASlib):
     island_sep = Param(pdt.TypeDouble, "Separation of two island", 30, unit="μm")
     symmetric = Param(pdt.TypeBoolean, "Whether the coupler is symmetric", False)
     align_offset = Param(pdt.TypeDouble, "Separation of its alignment to qubit", 25, unit="μm")
+
+    fluxline_at_opposite = Param(pdt.TypeBoolean, "Put the fluxline to another side", False)
     fluxline_offset = Param(pdt.TypeDouble, "Offset from squid center", -18, unit="μm")
     fluxline_gap_width = Param(pdt.TypeDouble, "Gap between fluxline and qubit", 6, unit="μm")
     
@@ -155,7 +157,10 @@ class FloatingCoupler(ASlib):
     
     def _add_fluxline(self):
         cell = self.add_element(FluxLineT)
-        t = pya.CplxTrans(rot=-45) * pya.DTrans(self.island1_extent[0] / 2 + self.ground_gap_padding + self.fluxline_gap_width, self.fluxline_offset)
-        cell_inst, _ = self.insert_cell(cell, t)
+        if self.fluxline_at_opposite:
+            t = pya.CplxTrans(rot=135)
+        else:
+            t = pya.CplxTrans(rot=-45)
+        cell_inst, _ = self.insert_cell(cell, t * pya.DTrans(self.island1_extent[0] / 2 + self.ground_gap_padding + self.fluxline_gap_width, self.fluxline_offset))
         self.copy_port("fluxline", cell_inst)
         return cell_inst
