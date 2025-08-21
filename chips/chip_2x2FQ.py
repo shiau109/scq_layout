@@ -19,8 +19,11 @@ class Chip2x2FQ(ASlib):
         self._produce_qubits()
         # self._produce_driveline()
         # self.insert_cell(FloatingQubit, pya.Trans(0, 2500) * pya.Trans.R90, "Q0")
-        # self._produce_fluxline()
-        # self._produce_xyline()
+        self._produce_qubit_fluxline()
+        self._produce_xyline("L2", "Q0", 1, 0)
+        self._produce_xyline("D2", "Q1", 0, 1)
+        self._produce_xyline("R3", "Q2", -1, 0)
+        self._produce_xyline("U3", "Q3", 0, -1)
         # self._produce_readout_resonator(self.refpoints[f"Q0_port_coupler"], 6000)
 
     def _produce_frame(self):
@@ -30,15 +33,15 @@ class Chip2x2FQ(ASlib):
 
         # Launchers
         distance = 50
-        self.insert_cell(Launcher, pya.Trans(-4950+385+distance, 2550) * pya.Trans.R180, "launcher_R1", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(-4950+385+distance, 850) * pya.Trans.R180, "launcher_R2", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(-4950+385+distance, -850) * pya.Trans.R180, "launcher_R3", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(-4950+385+distance, -2550) * pya.Trans.R180, "launcher_R4", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        self.insert_cell(Launcher, pya.Trans(-4950+385+distance, 2550) * pya.Trans.R180, "launcher_L1", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        self.insert_cell(Launcher, pya.Trans(-4950+385+distance, 850) * pya.Trans.R180, "launcher_L2", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        self.insert_cell(Launcher, pya.Trans(-4950+385+distance, -850) * pya.Trans.R180, "launcher_L3", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        self.insert_cell(Launcher, pya.Trans(-4950+385+distance, -2550) * pya.Trans.R180, "launcher_L4", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
 
-        self.insert_cell(Launcher, pya.Trans(4950-385-distance, 2550), "launcher_L1", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(4950-385-distance, 850), "launcher_L2", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(4950-385-distance, -850), "launcher_L3", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(4950-385-distance, -2550), "launcher_L4", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        self.insert_cell(Launcher, pya.Trans(4950-385-distance, 2550), "launcher_R1", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        self.insert_cell(Launcher, pya.Trans(4950-385-distance, 850), "launcher_R2", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        self.insert_cell(Launcher, pya.Trans(4950-385-distance, -850), "launcher_R3", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        self.insert_cell(Launcher, pya.Trans(4950-385-distance, -2550), "launcher_R4", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
         
         self.insert_cell(Launcher, pya.Trans(-2550, 4950-385-distance) * pya.Trans.R90, "launcher_U1", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
         self.insert_cell(Launcher, pya.Trans(-850, 4950-385-distance) * pya.Trans.R90, "launcher_U2", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
@@ -52,28 +55,28 @@ class Chip2x2FQ(ASlib):
 
     def _produce_qubits(self):
         x, y = -1400, 0 # Position of left qubit
-        self.insert_cell(FloatingQubit, pya.Trans(x, y) * pya.Trans.R90, "Q0")
+        self.insert_cell(FloatingQubit, pya.Trans(x, y) * pya.Trans.R90, "Q0", xyline_at_center=True)
 
-        cell = self.add_element(FloatingCoupler, symmetric=True)
+        cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True)
         self.insert_cell(cell, pya.DTrans(self.refpoints["Q0_corner3"] - self.get_refpoints(cell, pya.DTrans.M0)["qubit1"]) * pya.DTrans.M0, "C0")
 
-        cell = self.add_element(FloatingQubit, coupler_at_island2=True)
-        self.insert_cell(cell, pya.DTrans(self.refpoints["C0_qubit2"] - self.get_refpoints(cell)["corner4"]), "Q1")
+        cell = self.add_element(FloatingQubit, xyline_at_center=True)
+        self.insert_cell(cell, pya.DTrans(self.refpoints["C0_qubit2"] - self.get_refpoints(cell, pya.DTrans.M0)["corner3"]) * pya.DTrans.M0, "Q1")
 
-        cell = self.add_element(FloatingCoupler, symmetric=True)
-        self.insert_cell(cell, pya.DTrans(self.refpoints["Q1_corner1"] - self.get_refpoints(cell, pya.DTrans.R180)["qubit2"]) * pya.DTrans.R180, "C1")
+        cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True)
+        self.insert_cell(cell, pya.DTrans(self.refpoints["Q1_corner2"] - self.get_refpoints(cell, pya.DTrans.R180)["qubit2"]) * pya.DTrans.R180, "C1")
 
-        cell = self.add_element(FloatingQubit)
+        cell = self.add_element(FloatingQubit, xyline_at_center=True)
         self.insert_cell(cell, pya.DTrans(self.refpoints["C1_qubit1"] - self.get_refpoints(cell, pya.DTrans.R270)["corner2"]) * pya.DTrans.R270, "Q2")
 
-        cell = self.add_element(FloatingCoupler, symmetric=True)
+        cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True)
         self.insert_cell(cell, pya.DTrans(self.refpoints["Q2_corner3"] - self.get_refpoints(cell, pya.DTrans.M90)["qubit1"]) * pya.DTrans.M90, "C2")
 
-        cell = self.add_element(FloatingQubit, coupler_at_island2=True)
-        self.insert_cell(cell, pya.DTrans(self.refpoints["C2_qubit2"] - self.get_refpoints(cell, pya.DTrans.R180)["corner4"]) * pya.DTrans.R180, "Q3")
+        cell = self.add_element(FloatingQubit, xyline_at_center=True)
+        self.insert_cell(cell, pya.DTrans(self.refpoints["C2_qubit2"] - self.get_refpoints(cell, pya.DTrans.M0 * pya.DTrans.R180)["corner3"]) * pya.DTrans.M0 * pya.DTrans.R180, "Q3")
 
-        cell = self.add_element(FloatingCoupler, symmetric=True)
-        self.insert_cell(cell, pya.DTrans(self.refpoints["Q3_corner1"] - self.get_refpoints(cell)["qubit2"]), "C3")
+        cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True)
+        self.insert_cell(cell, pya.DTrans(self.refpoints["Q3_corner2"] - self.get_refpoints(cell)["qubit2"]), "C3")
         
 
     # def _produce_driveline(self):
@@ -109,26 +112,24 @@ class Chip2x2FQ(ASlib):
     #                Node(self.refpoints[f"L2_base"])])        
        
         
-    # def _produce_fluxline(self):
-    #     self.insert_cell(
-    #         WaveguideComposite,
-    #         nodes=[Node(self.refpoints[f"L4_base"]),
-    #                Node(pya.DPoint(self.refpoints[f"L4_base"].x, self.refpoints[f"L4_base"].y - 150)),
-    #                Node(pya.DPoint(self.refpoints[f"Q0_port_fluxline"].x, self.refpoints[f"L4_base"].y - 150)),
-    #                Node(self.refpoints[f"Q0_port_fluxline"])
-    #                ])
+    def _produce_qubit_fluxline(self):
+        self.insert_cell(
+            WaveguideComposite,
+            nodes=[Node(self.refpoints[f"L4_base"]),
+                   Node(pya.DPoint(self.refpoints[f"L4_base"].x, self.refpoints[f"L4_base"].y - 150)),
+                   Node(pya.DPoint(self.refpoints[f"Q0_port_fluxline"].x, self.refpoints[f"L4_base"].y - 150)),
+                   Node(self.refpoints[f"Q0_port_fluxline"])
+                   ])
     
-    # def _produce_xyline(self):
-    #     offset = 100
-    #     self.insert_cell(
-    #         WaveguideComposite,
-    #         nodes=[Node(self.refpoints[f"L3_base"]),
-    #                Node(pya.DPoint(self.refpoints[f"L3_base"].x, self.refpoints[f"L3_base"].y - 150)),
-    #                Node(pya.DPoint(self.refpoints[f"Q0_port_xyline"].x - offset, self.refpoints[f"L3_base"].y - 150)),
-    #                Node(pya.DPoint(self.refpoints[f"Q0_port_xyline"].x - offset, self.refpoints[f"Q0_port_xyline"].y + 200)),
-    #                Node(pya.DPoint(self.refpoints[f"Q0_port_xyline"].x, self.refpoints[f"Q0_port_xyline"].y + 100)),
-    #                Node(self.refpoints[f"Q0_port_xyline"])
-    #                ])
+    def _produce_xyline(self, launcher_tag, qubit_name, factor_x, factor_y):
+        self.insert_cell(
+            WaveguideComposite,
+            nodes=[Node(self.refpoints["launcher_"+launcher_tag+"_base"]),
+                   Node(pya.DPoint(self.refpoints["launcher_"+launcher_tag+"_base"].x + factor_x*100, self.refpoints["launcher_"+launcher_tag+"_base"].y + factor_y*100)),
+                   Node(pya.DPoint(abs(factor_x) * self.refpoints["launcher_"+launcher_tag+"_base"].x + (1-abs(factor_x)) * self.refpoints[qubit_name+"_port_xyline"].x + factor_x*1000,
+                                   abs(factor_y) * self.refpoints["launcher_"+launcher_tag+"_base"].y + (1-abs(factor_y)) * self.refpoints[qubit_name+"_port_xyline"].y + factor_y*1000)),
+                   Node(self.refpoints[qubit_name+"_port_xyline"])
+                   ])
 
     # def _produce_readout_resonator(self, qport, length):
     #     w = 250
