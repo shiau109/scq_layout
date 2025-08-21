@@ -78,6 +78,13 @@ class FloatingQubit(ASlib):
         coupler_port_region, r = self._build_coupler_port()
         ground_gap_region = ground_gap_region + coupler_port_region
         ground_gap_region.round_corners(r / self.layout.dbu, r / self.layout.dbu, self.n)
+
+        # Add refpoints
+        self.refpoints["corner1"] = ground_gap_points[0]
+        self.refpoints["corner2"] = ground_gap_points[1]
+        self.refpoints["corner3"] = ground_gap_points[2]
+        self.refpoints["corner4"] = ground_gap_points[3]
+
         return ground_gap_region + coupler_port_region
 
 
