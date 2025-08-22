@@ -45,14 +45,11 @@ class FloatingCoupler(ASlib):
         ground_gap_region = self.gap_region(island1_region + island2_region)
 
         # Qubit
-        qubit1_region = self._build_qubit1()
-        qubit2_region = self._build_qubit2()
-
-        ground_gap_region += qubit1_region + qubit2_region
+        ground_gap_region += self._build_qubit1(1000) + self._build_qubit2(1000)
         ground_gap_region = force_rounded_corners(ground_gap_region, self.ground_gap_r / self.layout.dbu, self.ground_gap_r / self.layout.dbu, self.n)
 
         # Combine component together
-        region = ground_gap_region - island1_region - island2_region - qubit1_region - qubit2_region
+        region = ground_gap_region - island1_region - island2_region - self._build_qubit1(1500) - self._build_qubit2(1500)
         
         # Add refpoints
         self.refpoints["qubit1"] = qubit1_coord
@@ -123,14 +120,14 @@ class FloatingCoupler(ASlib):
             return self._build_island1()[0].transform(pya.DTrans.R180), pya.DTrans.R180 * self._build_island1()[1]
 
         
-    def _build_qubit1(self):
+    def _build_qubit1(self, size):
         coord = self._build_island1()[1]
         polygon = pya.DPolygon(
             [
                 pya.DPoint(coord.x, coord.y),
-                pya.DPoint(coord.x - 1000, coord.y),
-                pya.DPoint(coord.x - 1000, coord.y),
-                pya.DPoint(coord.x, coord.y - 1000),
+                pya.DPoint(coord.x - size, coord.y),
+                pya.DPoint(coord.x - size, coord.y - size),
+                pya.DPoint(coord.x, coord.y - size),
             ]
         )
         qubit_region = pya.Region(polygon.to_itype(self.layout.dbu))
@@ -140,11 +137,11 @@ class FloatingCoupler(ASlib):
 
         
 
-    def _build_qubit2(self):
+    def _build_qubit2(self, size):
         if self.symmetric:
-            return self._build_qubit1().transform(pya.DTrans.M0 * pya.DTrans.R90)
+            return self._build_qubit1(size).transform(pya.DTrans.M0 * pya.DTrans.R90)
         else:
-            return self._build_qubit1().transform(pya.DTrans.R180)
+            return self._build_qubit1(size).transform(pya.DTrans.R180)
 
     
     def _add_squid(self):
@@ -161,6 +158,14 @@ class FloatingCoupler(ASlib):
             t = pya.CplxTrans(rot=135)
         else:
             t = pya.CplxTrans(rot=-45)
-        cell_inst, _ = self.insert_cell(cell, t * pya.DTrans(self.island1_extent[0] / 2 + self.ground_gap_padding + self.fluxline_gap_width, self.fluxline_offset))
-        self.copy_port("fluxline", cell_inst)
+        t = t * pya.DTrans(self.island1_extent[0] / 2 + self.ground_gap_padding + self.fluxline_gap_width, self.fluxline_offset)
+        cell_inst, _ = self.insert_cell(cell, t)
+
+        # There seems to be a bug in KQCircuit such that copy_port() function makes the coordinate of port wrong (slightly deviate):
+        # self.copy_port("fluxline", cell_inst)
+        #
+        # Thus, we copy the port manually:
+        self.refpoints["port_fluxline"] = self.get_refpoints(cell, t)["port_fluxline"]
+        self.refpoints["port_fluxline_corner"] = self.get_refpoints(cell, t)["port_fluxline_corner"]
+        
         return cell_inst
