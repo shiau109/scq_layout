@@ -32,7 +32,7 @@ class Chip2x2FQ(ASlib):
     def _produce_frame(self):
         box = pya.DBox(-4950, -4950, 4950, 4950)
         region = pya.Region(box.to_itype(self.layout.dbu))
-        self.cell.shapes(self.get_layer("ground_grid_avoidance")).insert(region)
+        self.cell.shapes((130, 3)).insert(region)
 
         # Launchers
         distance = 50
