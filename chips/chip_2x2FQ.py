@@ -11,14 +11,13 @@ from kqcircuits.elements.finger_capacitor_taper import FingerCapacitorTaper
 from numpy import pi
 
 class Chip2x2FQ(ASlib):
-    readout_lengths = Param(pdt.TypeList, "Readout resonator lengths", [4918, 4837, 4759, 4684], unit="[μm]")
+    readout_lengths = Param(pdt.TypeList, "Readout resonator lengths", [4872.878447, 4788.947246, 4707.858376, 4629.469857], unit="[μm]")
     readout_sep = Param(pdt.TypeDouble, "Ground gap rounding radius", 3, unit="μm")
-    # purcell_length = Param(pdt.TypeDouble, "Purcell resonator lengths", 8500, unit="μm")
+
     def build(self):
         self._produce_frame()
         self._produce_qubits()
         self._produce_driveline()
-        # self.insert_cell(FloatingQubit, pya.Trans(0, 2500) * pya.Trans.R90, "Q0")
         self._produce_qubit_fluxline()
         self._produce_xyline("L2", "Q0", 1, 0)
         self._produce_xyline("D2", "Q1", 0, 1)
@@ -168,7 +167,7 @@ class Chip2x2FQ(ASlib):
             meanders=2,
         )
 
-        # Some parameters for Q0 & Q3
+        # Some parameters for Q1 & Q2
         p3 = 300
         p4 = 1500
         p5 = 500
@@ -235,7 +234,6 @@ class Chip2x2FQ(ASlib):
             WaveguideComposite,
             nodes=[Node(self.refpoints["launcher_L1_base"]),
                    Node(pya.DPoint(self.refpoints["launcher_L1_base"].x + 1500, self.refpoints["launcher_L1_base"].y)),
-                   #Node(pya.DPoint(self.refpoints["launcher_L1_base"].x + 1500, self.refpoints["Q0_port_fluxline"].y + 500)),
                    Node(pya.DPoint(self.refpoints["Q0_port_fluxline"].x, self.refpoints["Q0_port_fluxline"].y + 500)),
                    Node(self.refpoints["Q0_port_fluxline"])
                    ])
