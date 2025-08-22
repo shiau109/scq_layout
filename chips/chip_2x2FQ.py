@@ -11,7 +11,7 @@ from kqcircuits.elements.finger_capacitor_taper import FingerCapacitorTaper
 from numpy import pi
 
 class Chip2x2FQ(ASlib):
-    readout_lengths = Param(pdt.TypeList, "Readout resonator lengths", [4872.878447, 4788.947246, 4707.858376, 4629.469857], unit="[μm]")
+    readout_lengths = Param(pdt.TypeList, "Readout resonator lengths", [4743.137060,4657.290054, 4571.443048, 4485.596042], unit="[μm]")
     readout_sep = Param(pdt.TypeDouble, "Ground gap rounding radius", 3, unit="μm")
 
     def build(self):
