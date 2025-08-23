@@ -25,7 +25,7 @@ class FloatingCoupler(ASlib):
     island1_length = Param(pdt.TypeDouble, "Length of the qubit island that couple to qubit", 230, unit="μm")
     island_sep = Param(pdt.TypeDouble, "Separation of two island", 30, unit="μm")
     symmetric = Param(pdt.TypeBoolean, "Whether the coupler is symmetric", False)
-    align_r = Param(pdt.TypeDouble, "Rounding between qubit and coupler", 95, unit="μm")
+    align_r = Param(pdt.TypeDouble, "Rounding between qubit and coupler (<100)", 95, unit="μm")
     align_offset = Param(pdt.TypeDouble, "Separation of its alignment to qubit", 25, unit="μm")
 
     fluxline_at_opposite = Param(pdt.TypeBoolean, "Put the fluxline to another side", False)
@@ -47,8 +47,8 @@ class FloatingCoupler(ASlib):
         rounding_region = ground_gap_region + self._build_qubit1(1000) + self._build_qubit2(1000)
         rounding_region = force_rounded_corners(rounding_region, self.align_r / self.layout.dbu, self.align_r / self.layout.dbu, self.n)
         rounding_region = rounding_region & (
-            self._build_qubit1(1000).transform(pya.DTrans(self.align_r / self.layout.dbu, self.align_r / self.layout.dbu))
-            + self._build_qubit2(1000).transform(pya.DTrans(-self.align_r / self.layout.dbu, -self.align_r / self.layout.dbu)))
+            self._build_qubit1(1000).transform(pya.DTrans(2*self.align_r / self.layout.dbu, self.align_r / self.layout.dbu))
+            + self._build_qubit2(1000).transform(pya.DTrans(-2*self.align_r / self.layout.dbu, -self.align_r / self.layout.dbu)))
         rounding_region = rounding_region# - self._build_qubit1(1500) - self._build_qubit2(1500)
 
         # Combine component together
