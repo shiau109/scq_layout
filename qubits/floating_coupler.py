@@ -34,9 +34,6 @@ class FloatingCoupler(ASlib):
     
 
     def build(self):
-        # # Qubit base
-        # ground_gap_region = self.gap_region()
-
         # First island
         island1_region, qubit1_coord = self._build_island1()
 
