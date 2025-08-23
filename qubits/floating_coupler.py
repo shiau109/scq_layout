@@ -47,8 +47,8 @@ class FloatingCoupler(ASlib):
         rounding_region = ground_gap_region + self._build_qubit1(1000) + self._build_qubit2(1000)
         rounding_region = force_rounded_corners(rounding_region, self.align_r / self.layout.dbu, self.align_r / self.layout.dbu, self.n)
         rounding_region = rounding_region & (
-            self._build_qubit1(1000).transform(pya.DTrans(2*self.align_r / self.layout.dbu, self.align_r / self.layout.dbu))
-            + self._build_qubit2(1000).transform(pya.DTrans(-2*self.align_r / self.layout.dbu, -self.align_r / self.layout.dbu)))
+            self._build_qubit1(1000).transform(pya.DTrans((self.align_r + 50) / self.layout.dbu, (self.align_r + 50) / self.layout.dbu))
+            + self._build_qubit2(1000).transform(pya.DTrans(-(self.align_r + 50) / self.layout.dbu, -(self.align_r + 50) / self.layout.dbu)))
         rounding_region = rounding_region# - self._build_qubit1(1500) - self._build_qubit2(1500)
 
         # Combine component together
