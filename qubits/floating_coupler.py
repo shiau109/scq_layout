@@ -25,6 +25,7 @@ class FloatingCoupler(ASlib):
     island1_length = Param(pdt.TypeDouble, "Length of the qubit island that couple to qubit", 230, unit="μm")
     island_sep = Param(pdt.TypeDouble, "Separation of two island", 30, unit="μm")
     symmetric = Param(pdt.TypeBoolean, "Whether the coupler is symmetric", False)
+    align_r = Param(pdt.TypeDouble, "Rounding between qubit and coupler (<100)", 95, unit="μm")
     align_offset = Param(pdt.TypeDouble, "Separation of its alignment to qubit", 25, unit="μm")
 
     fluxline_at_opposite = Param(pdt.TypeBoolean, "Put the fluxline to another side", False)
@@ -33,23 +34,25 @@ class FloatingCoupler(ASlib):
     
 
     def build(self):
-        # # Qubit base
-        # ground_gap_region = self.gap_region()
-
         # First island
         island1_region, qubit1_coord = self._build_island1()
 
         # Second island
         island2_region, qubit2_coord = self._build_island2()
 
+        # Qubit base
         ground_gap_region = self.gap_region(island1_region + island2_region)
 
-        # Qubit
-        ground_gap_region += self._build_qubit1(1000) + self._build_qubit2(1000)
-        ground_gap_region = force_rounded_corners(ground_gap_region, self.ground_gap_r / self.layout.dbu, self.ground_gap_r / self.layout.dbu, self.n)
+        # Rounding between qubit and coupler
+        rounding_region = ground_gap_region + self._build_qubit1(1000) + self._build_qubit2(1000)
+        rounding_region = force_rounded_corners(rounding_region, self.align_r / self.layout.dbu, self.align_r / self.layout.dbu, self.n)
+        rounding_region = rounding_region & (
+            self._build_qubit1(1000).transform(pya.DTrans((self.align_r + 50) / self.layout.dbu, (self.align_r + 50) / self.layout.dbu))
+            + self._build_qubit2(1000).transform(pya.DTrans(-(self.align_r + 50) / self.layout.dbu, -(self.align_r + 50) / self.layout.dbu)))
+        rounding_region = rounding_region# - self._build_qubit1(1500) - self._build_qubit2(1500)
 
         # Combine component together
-        region = ground_gap_region - island1_region - island2_region - self._build_qubit1(1500) - self._build_qubit2(1500)
+        region = ground_gap_region + rounding_region - island1_region - island2_region - self._build_qubit1(1500) - self._build_qubit2(1500)
         
         # Add refpoints
         self.refpoints["qubit1"] = qubit1_coord
@@ -86,7 +89,7 @@ class FloatingCoupler(ASlib):
             ]
         )
         ground_gap_region += pya.Region(polygon.to_itype(self.layout.dbu))
-        ground_gap_region.round_corners(self.island1_r / self.layout.dbu, self.island1_r / self.layout.dbu, self.n)
+        ground_gap_region = force_rounded_corners(ground_gap_region, self.island1_r / self.layout.dbu, self.island1_r / self.layout.dbu, self.n)
 
         return ground_gap_region
 
