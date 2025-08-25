@@ -13,7 +13,7 @@ from numpy import pi
 class Chip2x2FQ(ASlib):
     readout_lengths = Param(pdt.TypeList, "Readout resonator lengths", [4743.137060,4657.290054, 4571.443048, 4485.596042], unit="[μm]")
     readout_sep = Param(pdt.TypeDouble, "Ground gap rounding radius", 3, unit="μm")
-    align_r = Param(pdt.TypeDouble, "Rounding between qubit and coupler", 95, unit="μm")
+    align_r = Param(pdt.TypeDouble, "Rounding between qubit and coupler", 20, unit="μm")
 
     def build(self):
         self._produce_frame()
