@@ -60,24 +60,24 @@ class Chip2x2FQ(ASlib):
 
     def _produce_qubits(self):
         x, y = -1400, 0 # Position of left qubit
-        self.insert_cell(FloatingQubit, pya.Trans(x, y) * pya.Trans.R90, "Q0", xyline_at_center=True)
+        self.insert_cell(FloatingQubit, pya.Trans(x, y) * pya.Trans.R90, "Q0", xyline_at_center=True, xyline_distance=10)
 
         cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r)
         self.insert_cell(cell, pya.DTrans(self.refpoints["Q0_corner3"] - self.get_refpoints(cell, pya.DTrans.M0)["qubit1"]) * pya.DTrans.M0, "C0")
 
-        cell = self.add_element(FloatingQubit, xyline_at_center=True)
+        cell = self.add_element(FloatingQubit, xyline_at_center=True, xyline_distance=10)
         self.insert_cell(cell, pya.DTrans(self.refpoints["C0_qubit2"] - self.get_refpoints(cell, pya.DTrans.M0)["corner3"]) * pya.DTrans.M0, "Q1")
 
         cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r)
         self.insert_cell(cell, pya.DTrans(self.refpoints["Q1_corner2"] - self.get_refpoints(cell, pya.DTrans.R180)["qubit2"]) * pya.DTrans.R180, "C1")
 
-        cell = self.add_element(FloatingQubit, xyline_at_center=True)
+        cell = self.add_element(FloatingQubit, xyline_at_center=True, xyline_distance=10)
         self.insert_cell(cell, pya.DTrans(self.refpoints["C1_qubit1"] - self.get_refpoints(cell, pya.DTrans.R270)["corner2"]) * pya.DTrans.R270, "Q2")
 
         cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r)
         self.insert_cell(cell, pya.DTrans(self.refpoints["Q2_corner3"] - self.get_refpoints(cell, pya.DTrans.M90)["qubit1"]) * pya.DTrans.M90, "C2")
 
-        cell = self.add_element(FloatingQubit, xyline_at_center=True)
+        cell = self.add_element(FloatingQubit, xyline_at_center=True, xyline_distance=10)
         self.insert_cell(cell, pya.DTrans(self.refpoints["C2_qubit2"] - self.get_refpoints(cell, pya.DTrans.M0 * pya.DTrans.R180)["corner3"]) * pya.DTrans.M0 * pya.DTrans.R180, "Q3")
 
         cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r)
