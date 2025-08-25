@@ -30,6 +30,7 @@ class FloatingQubit(ASlib):
     squid_arm_position2 = Param(pdt.TypeList, "Coordinate of squid arm at island2 (w.r.t. corner)", [28, 55])
 
     xyline_at_center = Param(pdt.TypeBoolean, "Put Location of xyline at center", False)
+    xyline_distance = Param(pdt.TypeDouble, "Distance from ground gap region", 0, unit="μm")
 
     fluxline_offset = Param(pdt.TypeDouble, "Offset from squid center", -18, unit="μm")
     fluxline_gap_width = Param(pdt.TypeDouble, "Gap between fluxline and qubit", 6, unit="μm")
@@ -199,8 +200,8 @@ class FloatingQubit(ASlib):
         island1_bottom = self.island_sep / 2
         cell = self.add_element(XyLine)
         if self.xyline_at_center:
-            cell_inst, _ = self.insert_cell(cell, pya.DTrans(0, self.ground_gap[1] / 2) * pya.DTrans.R90)
+            cell_inst, _ = self.insert_cell(cell, pya.DTrans(0, self.ground_gap[1] / 2 + self.xyline_distance) * pya.DTrans.R90)
         else:
-            cell_inst, _ = self.insert_cell(cell, pya.DTrans(self.ground_gap[0] / 2, island1_bottom + float(self.island1_extent[1]) / 2))
+            cell_inst, _ = self.insert_cell(cell, pya.DTrans(self.ground_gap[0] / 2 + self.xyline_distance, island1_bottom + float(self.island1_extent[1]) / 2))
         self.copy_port("xyline", cell_inst)
         return cell_inst
