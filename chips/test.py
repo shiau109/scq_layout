@@ -24,7 +24,7 @@ class TestChip(ASlib):
     def _produce_frame(self):
         box = pya.DBox(-4950, -4950, 4950, 4950)
         region = pya.Region(box.to_itype(self.layout.dbu))
-        self.cell.shapes(self.get_layer("ground_grid_avoidance")).insert(region)
+        self.cell.shapes((130, 3)).insert(region)
 
         # Launchers
         self.insert_cell(Launcher, pya.Trans(-4950+385+50, 3000) * pya.Trans.R180, "L1", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
