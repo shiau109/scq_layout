@@ -1,6 +1,6 @@
 from kqcircuits.elements.meander import Meander
 from kqcircuits.scq_layout.aslib import ASlib
-from kqcircuits.elements.launcher import Launcher
+from kqcircuits.scq_layout.elements.launcher import LauncherAS
 from kqcircuits.pya_resolver import pya
 from kqcircuits.util.parameters import Param, pdt, add_parameters_from
 from kqcircuits.elements.chip_frame import ChipFrame
@@ -15,20 +15,27 @@ class Chip2x2FQ(ASlib):
     readout_sep = Param(pdt.TypeDouble, "Ground gap rounding radius", 3, unit="μm")
     align_r = Param(pdt.TypeDouble, "Rounding between qubit and coupler", 20, unit="μm")
 
+    simulation_mode = Param(pdt.TypeInt, "0: none, 1: qubit w/o bus, 2: qubit w/ bus, 3: resonator w/o DL, 4: resonator w/ DL", 0)
+
     def build(self):
         self._produce_frame()
         self._produce_qubits()
-        self._produce_driveline()
-        self._produce_qubit_fluxline()
-        self._produce_xyline("L2", "Q0", 1, 0)
-        self._produce_xyline("D2", "Q1", 0, 1)
-        self._produce_xyline("R3", "Q2", -1, 0)
-        self._produce_xyline("U3", "Q3", 0, -1)
-        self._produce_coupler_fluxline("D1", "C0", 1, 0)
-        self._produce_coupler_fluxline("D4", "C1", 1, 0)
-        self._produce_coupler_fluxline("R1", "C2", 0, 1)
-        self._produce_coupler_fluxline("U1", "C3", 1, 0)
-        self._produce_readout_resonator(self.readout_lengths)
+        if self.simulation_mode in [0, 4]:
+            self._produce_driveline()
+        
+        if self.simulation_mode == 0:
+            self._produce_qubit_fluxline()
+            self._produce_xyline("L2", "Q0", 1, 0)
+            self._produce_xyline("D2", "Q1", 0, 1)
+            self._produce_xyline("R3", "Q2", -1, 0)
+            self._produce_xyline("U3", "Q3", 0, -1)
+            self._produce_coupler_fluxline("D1", "C0", 1, 0)
+            self._produce_coupler_fluxline("D4", "C1", 1, 0)
+            self._produce_coupler_fluxline("R1", "C2", 0, 1)
+            self._produce_coupler_fluxline("U1", "C3", 1, 0)
+
+        if self.simulation_mode in [0, 3, 4]:
+            self._produce_readout_resonator(self.readout_lengths)
 
     def _produce_frame(self):
         box = pya.DBox(-4950, -4950, 4950, 4950)
@@ -38,49 +45,63 @@ class Chip2x2FQ(ASlib):
         # Launchers
         distance = 50
         distance_extra = 750
-        self.insert_cell(Launcher, pya.Trans(-4950+385+distance, 2550) * pya.Trans.R180, "launcher_L1", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(-4950+385+distance, 850) * pya.Trans.R180, "launcher_L2", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(-4950+385+distance, -850) * pya.Trans.R180, "launcher_L3", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(-4950+385+distance, -2550) * pya.Trans.R180, "launcher_L4", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
 
-        self.insert_cell(Launcher, pya.Trans(4950-385-distance-distance_extra, 2550), "launcher_R1", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(4950-385-distance-distance_extra, 850), "launcher_R2", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(4950-385-distance-distance_extra, -850), "launcher_R3", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(4950-385-distance-distance_extra, -2550), "launcher_R4", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        visible, dl_visible = False, False
+        if self.simulation_mode == 0:
+            visible = True
+        if self.simulation_mode in [0, 4]:
+            dl_visible = True
+        self.insert_cell(LauncherAS, pya.Trans(-4950+385+distance, 2550) * pya.Trans.R180, "launcher_L1", visible=visible)
+        self.insert_cell(LauncherAS, pya.Trans(-4950+385+distance, 850) * pya.Trans.R180, "launcher_L2", visible=visible)
+        self.insert_cell(LauncherAS, pya.Trans(-4950+385+distance, -850) * pya.Trans.R180, "launcher_L3", visible=visible)
+        self.insert_cell(LauncherAS, pya.Trans(-4950+385+distance, -2550) * pya.Trans.R180, "launcher_L4", visible=dl_visible)
+
+        self.insert_cell(LauncherAS, pya.Trans(4950-385-distance-distance_extra, 2550), "launcher_R1", visible=visible)
+        self.insert_cell(LauncherAS, pya.Trans(4950-385-distance-distance_extra, 850), "launcher_R2", visible=visible)
+        self.insert_cell(LauncherAS, pya.Trans(4950-385-distance-distance_extra, -850), "launcher_R3", visible=visible)
+        self.insert_cell(LauncherAS, pya.Trans(4950-385-distance-distance_extra, -2550), "launcher_R4", visible=visible)
         
-        self.insert_cell(Launcher, pya.Trans(-2550, 4950-385-distance) * pya.Trans.R90, "launcher_U1", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(-850, 4950-385-distance) * pya.Trans.R90, "launcher_U2", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(850, 4950-385-distance) * pya.Trans.R90, "launcher_U3", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(2550, 4950-385-distance) * pya.Trans.R90, "launcher_U4", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        self.insert_cell(LauncherAS, pya.Trans(-2550, 4950-385-distance) * pya.Trans.R90, "launcher_U1", visible=visible)
+        self.insert_cell(LauncherAS, pya.Trans(-850, 4950-385-distance) * pya.Trans.R90, "launcher_U2", visible=visible)
+        self.insert_cell(LauncherAS, pya.Trans(850, 4950-385-distance) * pya.Trans.R90, "launcher_U3", visible=visible)
+        self.insert_cell(LauncherAS, pya.Trans(2550, 4950-385-distance) * pya.Trans.R90, "launcher_U4", visible=dl_visible)
 
-        self.insert_cell(Launcher, pya.Trans(-2550, -4950+385+distance+distance_extra) * pya.Trans.R270, "launcher_D1", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(-850, -4950+385+distance+distance_extra) * pya.Trans.R270, "launcher_D2", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(850, -4950+385+distance+distance_extra) * pya.Trans.R270, "launcher_D3", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
-        self.insert_cell(Launcher, pya.Trans(2550, -4950+385+distance+distance_extra) * pya.Trans.R270, "launcher_D4", launcher_frame_gap=85, b_launcher=85, a_launcher=150, s=150, l=150)
+        self.insert_cell(LauncherAS, pya.Trans(-2550, -4950+385+distance+distance_extra) * pya.Trans.R270, "launcher_D1", visible=visible)
+        self.insert_cell(LauncherAS, pya.Trans(-850, -4950+385+distance+distance_extra) * pya.Trans.R270, "launcher_D2", visible=visible)
+        self.insert_cell(LauncherAS, pya.Trans(850, -4950+385+distance+distance_extra) * pya.Trans.R270, "launcher_D3", visible=visible)
+        self.insert_cell(LauncherAS, pya.Trans(2550, -4950+385+distance+distance_extra) * pya.Trans.R270, "launcher_D4", visible=visible)
+        
+
+            
+            
 
     def _produce_qubits(self):
+        c_visible = False
+        if self.simulation_mode in [0, 1, 2]:
+            c_visible = True
+
         x, y = -1400, 0 # Position of left qubit
         self.insert_cell(FloatingQubit, pya.Trans(x, y) * pya.Trans.R90, "Q0", xyline_at_center=True, xyline_distance=10)
 
-        cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r)
+        cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r, visible=c_visible)
         self.insert_cell(cell, pya.DTrans(self.refpoints["Q0_corner3"] - self.get_refpoints(cell, pya.DTrans.M0)["qubit1"]) * pya.DTrans.M0, "C0")
 
         cell = self.add_element(FloatingQubit, xyline_at_center=True, xyline_distance=10)
         self.insert_cell(cell, pya.DTrans(self.refpoints["C0_qubit2"] - self.get_refpoints(cell, pya.DTrans.M0)["corner3"]) * pya.DTrans.M0, "Q1")
 
-        cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r)
+        cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r, visible=c_visible)
         self.insert_cell(cell, pya.DTrans(self.refpoints["Q1_corner2"] - self.get_refpoints(cell, pya.DTrans.R180)["qubit2"]) * pya.DTrans.R180, "C1")
 
         cell = self.add_element(FloatingQubit, xyline_at_center=True, xyline_distance=10)
         self.insert_cell(cell, pya.DTrans(self.refpoints["C1_qubit1"] - self.get_refpoints(cell, pya.DTrans.R270)["corner2"]) * pya.DTrans.R270, "Q2")
 
-        cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r)
+        cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r, visible=c_visible)
         self.insert_cell(cell, pya.DTrans(self.refpoints["Q2_corner3"] - self.get_refpoints(cell, pya.DTrans.M90)["qubit1"]) * pya.DTrans.M90, "C2")
 
         cell = self.add_element(FloatingQubit, xyline_at_center=True, xyline_distance=10)
         self.insert_cell(cell, pya.DTrans(self.refpoints["C2_qubit2"] - self.get_refpoints(cell, pya.DTrans.M0 * pya.DTrans.R180)["corner3"]) * pya.DTrans.M0 * pya.DTrans.R180, "Q3")
 
-        cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r)
+        cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r, visible=c_visible)
         self.insert_cell(cell, pya.DTrans(self.refpoints["Q3_corner2"] - self.get_refpoints(cell)["qubit2"]), "C3")
         
     distance_line = 500
