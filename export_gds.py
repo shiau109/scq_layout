@@ -1,14 +1,14 @@
 import pya
 from kqcircuits.util.load_save_layout import save_layout
 
-def export_chip_gds(filename, Chip):
+def export_chip_gds(filename, Chip, **params):
     # Create a new layout
     layout = pya.Layout()
     # layout.dbu = 0.001  # database unit in µm
 
     # Create the top cell
     top = layout.create_cell("TOP")
-    chip_cell = Chip.create(layout)
+    chip_cell = Chip.create(layout, **params)
     top.insert(pya.CellInstArray(chip_cell.cell_index(), pya.Trans()))
 
     # Define input layers

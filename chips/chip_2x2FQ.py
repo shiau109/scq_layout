@@ -14,6 +14,9 @@ class Chip2x2FQ(ASlib):
     readout_lengths = Param(pdt.TypeList, "Readout resonator lengths", [4743.137060,4657.290054, 4571.443048, 4485.596042], unit="[μm]")
     readout_sep = Param(pdt.TypeDouble, "Ground gap rounding radius", 3, unit="μm")
     align_r = Param(pdt.TypeDouble, "Rounding between qubit and coupler", 20, unit="μm")
+    ground_gap_padding = Param(pdt.TypeDouble, "Distance from ground to island", 80, unit="μm")
+    island1_length = Param(pdt.TypeDouble, "Length of the qubit island that couple to qubit", 170, unit="μm")
+    grq_length = Param(pdt.TypeDouble, "Length of the qubit island that couple to readout resonator", 80, unit="μm")
 
     simulation_mode = Param(pdt.TypeInt, "0: none, 1: qubit w/o bus, 2: qubit w/ bus, 3: resonator w/o DL, 4: resonator w/ DL", 0)
 
@@ -81,24 +84,24 @@ class Chip2x2FQ(ASlib):
             c_visible = True
 
         x, y = -1400, 0 # Position of left qubit
-        self.insert_cell(FloatingQubit, pya.Trans(x, y) * pya.Trans.R90, "Q0", xyline_at_center=True, xyline_distance=10)
+        self.insert_cell(FloatingQubit, pya.Trans(x, y) * pya.Trans.R90, "Q0", xyline_at_center=True, xyline_distance=10, island1_side_hole=[self.grq_length, 30])
 
         cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r, visible=c_visible)
         self.insert_cell(cell, pya.DTrans(self.refpoints["Q0_corner3"] - self.get_refpoints(cell, pya.DTrans.M0)["qubit1"]) * pya.DTrans.M0, "C0")
 
-        cell = self.add_element(FloatingQubit, xyline_at_center=True, xyline_distance=10)
+        cell = self.add_element(FloatingQubit, xyline_at_center=True, xyline_distance=10, island1_side_hole=[self.grq_length, 30])
         self.insert_cell(cell, pya.DTrans(self.refpoints["C0_qubit2"] - self.get_refpoints(cell, pya.DTrans.M0)["corner3"]) * pya.DTrans.M0, "Q1")
 
         cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r, visible=c_visible)
         self.insert_cell(cell, pya.DTrans(self.refpoints["Q1_corner2"] - self.get_refpoints(cell, pya.DTrans.R180)["qubit2"]) * pya.DTrans.R180, "C1")
 
-        cell = self.add_element(FloatingQubit, xyline_at_center=True, xyline_distance=10)
+        cell = self.add_element(FloatingQubit, xyline_at_center=True, xyline_distance=10, island1_side_hole=[self.grq_length, 30])
         self.insert_cell(cell, pya.DTrans(self.refpoints["C1_qubit1"] - self.get_refpoints(cell, pya.DTrans.R270)["corner2"]) * pya.DTrans.R270, "Q2")
 
         cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r, visible=c_visible)
         self.insert_cell(cell, pya.DTrans(self.refpoints["Q2_corner3"] - self.get_refpoints(cell, pya.DTrans.M90)["qubit1"]) * pya.DTrans.M90, "C2")
 
-        cell = self.add_element(FloatingQubit, xyline_at_center=True, xyline_distance=10)
+        cell = self.add_element(FloatingQubit, xyline_at_center=True, xyline_distance=10, island1_side_hole=[self.grq_length, 30])
         self.insert_cell(cell, pya.DTrans(self.refpoints["C2_qubit2"] - self.get_refpoints(cell, pya.DTrans.M0 * pya.DTrans.R180)["corner3"]) * pya.DTrans.M0 * pya.DTrans.R180, "Q3")
 
         cell = self.add_element(FloatingCoupler, symmetric=True, fluxline_at_opposite=True, align_r=self.align_r, visible=c_visible)
@@ -106,12 +109,14 @@ class Chip2x2FQ(ASlib):
         
     distance_line = 500
     def _produce_driveline(self):
+        bend = 1500
         self.insert_cell(
             WaveguideComposite,
             nodes=[Node(self.refpoints["launcher_L4_base"]),
                    Node(pya.DPoint(self.refpoints["launcher_D1_base"].x - 400, self.refpoints["launcher_L4_base"].y)),
                    Node(pya.DPoint(self.refpoints["launcher_D1_base"].x - 400, -4950 + self.distance_line)),
-                   Node(pya.DPoint(4950 - self.distance_line, -4950 + self.distance_line)),
+                   Node(pya.DPoint(4950 - self.distance_line - bend, -4950 + self.distance_line)),
+                   Node(pya.DPoint(4950 - self.distance_line, -4950 + self.distance_line + bend)),
                    Node(pya.DPoint(4950 - self.distance_line, self.refpoints["launcher_R1_base"].y + 400)),
                    Node(pya.DPoint(self.refpoints["launcher_U4_base"].x, self.refpoints["launcher_R1_base"].y + 400)),
                    Node(self.refpoints["launcher_U4_base"])
