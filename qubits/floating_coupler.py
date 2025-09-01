@@ -61,14 +61,14 @@ class FloatingCoupler(ASlib):
         self.refpoints["qubit2"] = qubit2_coord
 
         # Add region
-        if self.visible and self.simulation_mode == 0:
+        if self.visible:
             self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(region)
 
         # # Add SQUID
         # self.cell.insert(self._add_squid())       
 
         # Add flux line
-        if self.visible:
+        if self.visible and self.simulation_mode == 0:
             self.cell.insert(self._add_fluxline())
 
     

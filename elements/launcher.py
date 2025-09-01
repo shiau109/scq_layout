@@ -18,11 +18,12 @@
 
 
 from kqcircuits.elements.element import Element
+from kqcircuits.scq_layout.aslib import ASlib
 from kqcircuits.pya_resolver import pya
 from kqcircuits.util.parameters import Param, pdt
 
 
-class LauncherAS(Element):
+class LauncherAS(ASlib):
     s = Param(pdt.TypeDouble, "Pad width", 150, unit="μm")
     l = Param(pdt.TypeDouble, "Tapering length", 150, unit="μm")
     a_launcher = Param(pdt.TypeDouble, "Outer trace width", 150, unit="μm")
