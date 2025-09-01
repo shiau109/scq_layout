@@ -32,6 +32,8 @@ class FloatingCoupler(ASlib):
     fluxline_offset = Param(pdt.TypeDouble, "Offset from squid center", -18, unit="μm")
     fluxline_gap_width = Param(pdt.TypeDouble, "Gap between fluxline and qubit", 6, unit="μm")
     
+    simulation_mode = Param(pdt.TypeInt, "0: none, 1: qubit w/o bus, 2: qubit w/ bus, 3: resonator w/o DL, 4: resonator w/ DL", 0)
+    visible = Param(pdt.TypeBoolean, "Whether the qubit is visible", True)
 
     def build(self):
         # First island
@@ -59,13 +61,15 @@ class FloatingCoupler(ASlib):
         self.refpoints["qubit2"] = qubit2_coord
 
         # Add region
-        self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(region)
+        if self.visible and self.simulation_mode == 0:
+            self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(region)
 
         # # Add SQUID
         # self.cell.insert(self._add_squid())       
 
         # Add flux line
-        self.cell.insert(self._add_fluxline())
+        if self.visible:
+            self.cell.insert(self._add_fluxline())
 
     
     def gap_region(self, region):
