@@ -14,19 +14,21 @@ def export_chip_gds(filename, Chip, **params):
     # Define input layers
     layerA = layout.layer(130, 1)   # exclusion layer
     layerB = layout.layer(130, 3)   # metal layer
+    layerC = layout.layer(136, 1)   # SQUID layer
+    layerD = layout.layer(139, 1)   # SQUID arm layer
 
     # Convert to Regions
     regionA = pya.Region(top.begin_shapes_rec(layerA))
     regionB = pya.Region(top.begin_shapes_rec(layerB))
     result = regionB - regionA
+    regionC = pya.Region(top.begin_shapes_rec(layerC))
+    regionD = pya.Region(top.begin_shapes_rec(layerD))
 
-    # --- Create target layer (1,0) ---
-    target_layer = layout.layer(pya.LayerInfo(1, 0))
-
-    # Put result into new layer
-    top.shapes(target_layer).clear()
-    top.shapes(target_layer).insert(result)
+    # Assign patterns to layers
+    top.shapes(layout.layer(pya.LayerInfo(1, 0))).insert(result)
+    top.shapes(layout.layer(pya.LayerInfo(2, 0))).insert(regionC)
+    top.shapes(layout.layer(pya.LayerInfo(3, 0))).insert(regionD)
 
     # Save GDS with only the target layer
-    save_layout(filename, layout, layers=[(1, 0)])
+    save_layout(filename, layout, layers=[(1, 0), (2, 0), (3, 0)])
 
