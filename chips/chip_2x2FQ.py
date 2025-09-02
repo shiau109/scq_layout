@@ -11,10 +11,10 @@ from kqcircuits.elements.finger_capacitor_taper import FingerCapacitorTaper
 from numpy import pi
 
 class Chip2x2FQ(ASlib):
-    readout_lengths = Param(pdt.TypeList, "Readout resonator lengths", [4743.137060,4657.290054, 4571.443048, 4485.596042], unit="[μm]")
+    readout_lengths = Param(pdt.TypeList, "Readout resonator lengths", [4770.138121, 4687.390981, 4607.446073, 4530.163422], unit="[μm]")
     readout_sep = Param(pdt.TypeDouble, "Ground gap rounding radius", 3, unit="μm")
     align_r = Param(pdt.TypeDouble, "Rounding between qubit and coupler", 20, unit="μm")
-    ground_gap_padding = Param(pdt.TypeDouble, "Distance from ground to island", 80, unit="μm")
+    ground_gap_padding = Param(pdt.TypeDouble, "Distance from ground to island", 81, unit="μm")
     island1_length = Param(pdt.TypeDouble, "Length of the qubit island that couple to qubit", 170, unit="μm")
     grq_length = Param(pdt.TypeDouble, "Length of the qubit island that couple to readout resonator", 80, unit="μm")
 
