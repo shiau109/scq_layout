@@ -5,7 +5,7 @@ from kqcircuits.util.parameters import Param, pdt, add_parameters_from
 from kqcircuits.scq_layout.aslib import ASlib
 from kqcircuits.pya_resolver import pya
 from kqcircuits.util.refpoints import WaveguideToSimPort, JunctionSimPort
-from kqcircuits.scq_layout.junctions.squidAS import SquidAS
+from kqcircuits.scq_layout.junctions.squidC import SquidC
 from kqcircuits.scq_layout.elements.flux_line import FluxLineT
 from kqcircuits.scq_layout.elements.xy_line import XyLine
 from kqcircuits.util.geometry_helper import force_rounded_corners
@@ -27,6 +27,11 @@ class FloatingCoupler(ASlib):
     symmetric = Param(pdt.TypeBoolean, "Whether the coupler is symmetric", False)
     align_r = Param(pdt.TypeDouble, "Rounding between qubit and coupler (<100)", 95, unit="μm")
     align_offset = Param(pdt.TypeDouble, "Separation of its alignment to qubit", 25, unit="μm")
+
+    squid_sep = Param(pdt.TypeDouble, "Distance from SQUID to ground plane", 7)
+    squid_arm_position1 = Param(pdt.TypeList, "Coordinate of squid arm at island1 (w.r.t. corner)", [28, 75])
+    squid_arm_position2 = Param(pdt.TypeList, "Coordinate of squid arm at island2 (w.r.t. corner)", [28, 75])
+    flip_squid = Param(pdt.TypeBoolean, "Flip the SQUID axis", False)
 
     fluxline_at_opposite = Param(pdt.TypeBoolean, "Put the fluxline to another side", False)
     fluxline_offset = Param(pdt.TypeDouble, "Offset from squid center", -18, unit="μm")
@@ -64,8 +69,8 @@ class FloatingCoupler(ASlib):
         if self.visible:
             self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(region)
 
-        # # Add SQUID
-        # self.cell.insert(self._add_squid())       
+        # Add SQUID
+        self.cell.insert(self._add_squid())       
 
         # Add flux line
         if self.visible and self.simulation_mode == 0:
@@ -152,11 +157,18 @@ class FloatingCoupler(ASlib):
 
     
     def _add_squid(self):
-        transx = self.ground_gap[0] / 2 - self.squid_sep
-        upt = [self.island1_extent[0] / 2 - self.squid_arm_position1[0] - transx, self.island_sep / 2 + self.squid_arm_position1[1]]
-        dpt = [self.island2_extent[0] / 2 - self.squid_arm_position2[0] - transx, -self.island_sep / 2 - self.squid_arm_position2[1]]
-        cell = self.add_element(SquidAS, up_arm_connect_pt=upt, down_arm_connect_pt=dpt)
-        cell_inst, _ = self.insert_cell(cell, pya.DTrans(transx, 0))
+        transx = self.island1_extent[0] / 2 + self.ground_gap_padding - self.squid_sep
+        upt = pya.DPoint(self.island1_extent[0] / 2 - self.squid_arm_position1[0] - transx, self.island_sep / 2 + self.squid_arm_position1[1])
+        dpt = pya.DPoint(self.island1_extent[0] / 2 - self.squid_arm_position2[0] - transx, -self.island_sep / 2 - self.squid_arm_position2[1])
+
+        t = pya.CplxTrans(rot=-45)
+        
+        cell = self.add_element(SquidC, up_arm_connect_pt=[(t*upt).x, (t*upt).y], down_arm_connect_pt=[(t*dpt).x, (t*dpt).y], flip=self.flip_squid)
+        if self.fluxline_at_opposite:
+            cell_inst, _ = self.insert_cell(cell, pya.DTrans(t*pya.DTrans.R180 * pya.DPoint(transx, 0))*pya.DTrans.R180)
+        else:
+            cell_inst, _ = self.insert_cell(cell, pya.DTrans(t * pya.DPoint(transx, 0)))
+        
         return cell_inst
     
     def _add_fluxline(self):

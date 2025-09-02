@@ -20,6 +20,7 @@ class SquidAS(ASlib):
     arm_position = Param(pdt.TypeDouble, "Position of arm (0: leftmost; 1: rightmost)", 0.2)
     up_arm_connect_pt = Param(pdt.TypeList, "Coordinate of up arm starting point (µm, µm)", [-50, 50])
     down_arm_connect_pt = Param(pdt.TypeList, "Coordinate of down arm starting point (µm, µm)", [-50, -50])
+    flip = Param(pdt.TypeBoolean, "Flip the SQUID axis", False)
 
     def build(self):
         cross_region = self._cross(0) + self._cross(-self.finger_sep)
@@ -62,8 +63,12 @@ class SquidAS(ASlib):
         return (region + arm_region).round_corners(r / self.layout.dbu, r / self.layout.dbu, self.n)
     
     def _cross(self, x):
-        bar1_region = self._bar(x + self.JJ_overshoot, 0, x - self.JJ_length, 0, width=self.JJ_width)
-        bar2_region = self._bar(x, self.JJ_overshoot, x, -self.JJ_length, width=self.JJ_width)
+        if self.flip:
+            bar1_region = self._bar(x - self.JJ_overshoot - self.JJ_length, -self.JJ_length, x, -self.JJ_length, width=self.JJ_width)
+            bar2_region = self._bar(x - self.JJ_length, 0, x - self.JJ_length, -self.JJ_length - self.JJ_overshoot, width=self.JJ_width)
+        else:
+            bar1_region = self._bar(x + self.JJ_overshoot, 0, x - self.JJ_length, 0, width=self.JJ_width)
+            bar2_region = self._bar(x, self.JJ_overshoot, x, -self.JJ_length, width=self.JJ_width)
         return bar1_region + bar2_region
 
     def _bar(self, x1, y1, x2, y2, width):
