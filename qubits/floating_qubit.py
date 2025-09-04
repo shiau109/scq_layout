@@ -183,8 +183,11 @@ class FloatingQubit(ASlib):
                             island1_bottom + float(self.island1_extent[1]) / 2 + self.a / 2 + self.b),
                 ]
             )
-            coupler_port_region += pya.Region(cap_polygon.to_itype(self.layout.dbu))
+            cap_region = pya.Region(cap_polygon.to_itype(self.layout.dbu))
+            if self.coupler_at_island2:
+                cap_region = cap_region.transform(pya.Trans.M0)
 
+            coupler_port_region += cap_region  
         return region + coupler_port_region - coupler_region
         
     def _build_coupler_port(self):
