@@ -18,12 +18,12 @@ class FloatingCouplerV2(ASlib):
     """
 
     ground_gap_padding = Param(pdt.TypeDouble, "Distance from ground to island", 100, unit="μm")
-    padding_reduction = Param(pdt.TypeDouble, "Reduction of padding around the qubit", 0, unit="μm")
+    padding_reduction = Param(pdt.TypeDouble, "Reduction of padding around the qubit", 40, unit="μm")
     ground_gap_r = Param(pdt.TypeDouble, "Ground gap rounding radius of 'floating qubit'", 95, unit="μm")
     island1_extent = Param(pdt.TypeList, "Width, height of qubit island (µm, µm)", [510, 175])
     island1_r = Param(pdt.TypeDouble, "Qubit island rounding radius", 87.5, unit="μm")
-    island1_arm = Param(pdt.TypeList, "Width, height of the qubit island arm (µm, µm)", [125, 225])
-    island1_length = Param(pdt.TypeList, "Length of the qubit island that couple to qubit", [150, 230], unit="μm")
+    island1_arm = Param(pdt.TypeList, "Width, height of the qubit island arm (µm, µm)", [150, 225])
+    island1_length = Param(pdt.TypeList, "Length of the qubit island that couple to qubit (µm, µm)", [210, 310])
     island_sep = Param(pdt.TypeDouble, "Separation of two island", 30, unit="μm")
     symmetric = Param(pdt.TypeBoolean, "Whether the coupler is symmetric", False)
 
@@ -177,10 +177,10 @@ class FloatingCouplerV2(ASlib):
     def _build_cornercircle1(self):
         coord = self._build_island1(0)[1]
         polygon = pya.DPolygon.ellipse(pya.DBox(pya.DPoint(coord.x + self.sep_m + self.sep_g, coord.y + self.sep_m + self.sep_g),
-                                                pya.DPoint(coord.x - 2*self.ground_gap_r - self.sep_m - self.sep_g, coord.y - 2*self.ground_gap_r - self.sep_m - self.sep_g)), 4 * self.n)
+                                                pya.DPoint(coord.x - 2*self.ground_gap_r - self.sep_m - self.sep_g, coord.y - 2*self.ground_gap_r - self.sep_m - self.sep_g)), self.n)
         region1 = pya.Region(polygon.to_itype(self.layout.dbu))
         polygon = pya.DPolygon.ellipse(pya.DBox(pya.DPoint(coord.x + self.sep_m, coord.y + self.sep_m),
-                                                pya.DPoint(coord.x - 2*self.ground_gap_r - self.sep_m, coord.y - 2*self.ground_gap_r - self.sep_m)), 4 * self.n)
+                                                pya.DPoint(coord.x - 2*self.ground_gap_r - self.sep_m, coord.y - 2*self.ground_gap_r - self.sep_m)), self.n)
         region2 = pya.Region(polygon.to_itype(self.layout.dbu))
         return region1 - region2
     
