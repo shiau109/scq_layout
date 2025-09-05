@@ -17,7 +17,8 @@ class FloatingCouplerV2(ASlib):
     
     """
 
-    ground_gap_padding = Param(pdt.TypeDouble, "Distance from ground to island", 90, unit="μm")
+    ground_gap_padding = Param(pdt.TypeDouble, "Distance from ground to island", 100, unit="μm")
+    padding_reduction = Param(pdt.TypeDouble, "Reduction of padding around the qubit", 0, unit="μm")
     ground_gap_r = Param(pdt.TypeDouble, "Ground gap rounding radius of 'floating qubit'", 95, unit="μm")
     island1_extent = Param(pdt.TypeList, "Width, height of qubit island (µm, µm)", [510, 175])
     island1_r = Param(pdt.TypeDouble, "Qubit island rounding radius", 87.5, unit="μm")
@@ -43,21 +44,13 @@ class FloatingCouplerV2(ASlib):
 
     def build(self):
         # First island
-        island1_region, qubit1_coord = self._build_island1()
+        island1_region, qubit1_coord = self._build_island1(0)
 
         # Second island
-        island2_region, qubit2_coord = self._build_island2()
+        island2_region, qubit2_coord = self._build_island2(0)
 
         # Qubit base
-        ground_gap_region = self.gap_region(island1_region + island2_region)
-
-        # Rounding between qubit and coupler
-        # rounding_region = ground_gap_region + self._build_qubit1(1000) + self._build_qubit2(1000)
-        # rounding_region = force_rounded_corners(rounding_region, self.align_r / self.layout.dbu, self.align_r / self.layout.dbu, self.n)
-        # rounding_region = rounding_region & (
-        #     self._build_qubit1(1000).transform(pya.DTrans((self.align_r + 50) / self.layout.dbu, (self.align_r + 50) / self.layout.dbu))
-        #     + self._build_qubit2(1000).transform(pya.DTrans(-(self.align_r + 50) / self.layout.dbu, -(self.align_r + 50) / self.layout.dbu)))
-        # rounding_region = rounding_region# - self._build_qubit1(1500) - self._build_qubit2(1500)
+        ground_gap_region = self.gap_region()
 
         # Combine component together
         region = ground_gap_region - island1_region - island2_region
@@ -78,9 +71,11 @@ class FloatingCouplerV2(ASlib):
             self.cell.insert(self._add_fluxline())
 
     
-    def gap_region(self, region):
-        ground_gap_region = region
-        ground_gap_region.size(self.ground_gap_padding * 1e3)
+    def gap_region(self):
+        island1_region, _ = self._build_island1(self.padding_reduction)
+        island2_region, _ = self._build_island2(self.padding_reduction)
+        ground_gap_region = island1_region + island2_region
+        ground_gap_region.size(self.ground_gap_padding / self.layout.dbu)
 
         polygon = pya.DPolygon(
             [
@@ -108,19 +103,19 @@ class FloatingCouplerV2(ASlib):
         return ground_gap_region
 
 
-    def _build_island1(self):
+    def _build_island1(self, shorten_length):
         nodes = []
         nodes.append(pya.DPoint(-self.island_sep / 2**1.5, -self.island_sep / 2**1.5))
         nodes.append(pya.DPoint(nodes[-1].x - self.island1_extent[0] / 2**1.5, nodes[-1].y + self.island1_extent[0] / 2**1.5))
         nodes.append(pya.DPoint(nodes[-1].x - self.island1_extent[1] / 2**0.5, nodes[-1].y - self.island1_extent[1] / 2**0.5))
         nodes.append(pya.DPoint(nodes[-1].x + (self.island1_extent[0] - self.island1_arm[0]) / 2**1.5, nodes[-1].y - (self.island1_extent[0] - self.island1_arm[0]) / 2**1.5))
         nodes.append(pya.DPoint(nodes[-1].x - self.island1_arm[1] / 2**0.5, nodes[-1].y - self.island1_arm[1] / 2**0.5))
-        nodes.append(pya.DPoint(nodes[-1].x - self.island1_length[0], nodes[-1].y))
+        nodes.append(pya.DPoint(nodes[-1].x - (self.island1_length[0] - shorten_length), nodes[-1].y))
         nodes.append(pya.DPoint(nodes[-1].x, nodes[-1].y - self.island1_arm[0] / 2**0.5))
-        nodes.append(pya.DPoint(nodes[-1].x + self.island1_length[0], nodes[-1].y))
-        nodes.append(pya.DPoint(nodes[-1].x, nodes[-1].y - self.island1_length[1]))
+        nodes.append(pya.DPoint(nodes[-1].x + (self.island1_length[0] - shorten_length), nodes[-1].y))
+        nodes.append(pya.DPoint(nodes[-1].x, nodes[-1].y - (self.island1_length[1] - shorten_length)))
         nodes.append(pya.DPoint(nodes[-1].x + self.island1_arm[0] / 2**0.5, nodes[-1].y))
-        nodes.append(pya.DPoint(nodes[-1].x, nodes[-1].y + self.island1_length[1]))
+        nodes.append(pya.DPoint(nodes[-1].x, nodes[-1].y + (self.island1_length[1] - shorten_length)))
         nodes.append(pya.DPoint(nodes[-1].x + self.island1_arm[1] / 2**0.5, nodes[-1].y + self.island1_arm[1] / 2**0.5))
         nodes.append(pya.DPoint(nodes[-1].x + (self.island1_extent[0] - self.island1_arm[0]) / 2**1.5, nodes[-1].y - (self.island1_extent[0] - self.island1_arm[0]) / 2**1.5))
         nodes.append(pya.DPoint(nodes[-1].x + self.island1_extent[1] / 2**0.5, nodes[-1].y + self.island1_extent[1] / 2**0.5))
@@ -133,15 +128,15 @@ class FloatingCouplerV2(ASlib):
 
         return island1_region, nodes[7]
     
-    def _build_island2(self):
+    def _build_island2(self, shorten_length):
         if self.symmetric:
-            return self._build_island1()[0].transform(pya.DTrans.M0 * pya.DTrans.R90), pya.DTrans.M0 * pya.DTrans.R90 * self._build_island1()[1]
+            return self._build_island1(shorten_length)[0].transform(pya.DTrans.M0 * pya.DTrans.R90), pya.DTrans.M0 * pya.DTrans.R90 * self._build_island1(shorten_length)[1]
         else:
-            return self._build_island1()[0].transform(pya.DTrans.R180), pya.DTrans.R180 * self._build_island1()[1]
+            return self._build_island1(shorten_length)[0].transform(pya.DTrans.R180), pya.DTrans.R180 * self._build_island1(shorten_length)[1]
 
         
     def _build_qubit1(self, size):
-        coord = self._build_island1()[1]
+        coord = self._build_island1(0)[1]
         polygon = pya.DPolygon(
             [
                 pya.DPoint(coord.x + self.sep_m, coord.y + self.sep_m),
@@ -161,7 +156,7 @@ class FloatingCouplerV2(ASlib):
             return self._build_qubit1(size).transform(pya.DTrans.R180)
 
     def _build_cornerbox1(self):
-        coord = self._build_island1()[1]
+        coord = self._build_island1(0)[1]
         polygon = pya.DPolygon(
             [
                 pya.DPoint(coord.x + self.sep_m + self.sep_g, coord.y + self.sep_m + self.sep_g),
@@ -180,7 +175,7 @@ class FloatingCouplerV2(ASlib):
             return self._build_cornerbox1().transform(pya.DTrans.R180)
     
     def _build_cornercircle1(self):
-        coord = self._build_island1()[1]
+        coord = self._build_island1(0)[1]
         polygon = pya.DPolygon.ellipse(pya.DBox(pya.DPoint(coord.x + self.sep_m + self.sep_g, coord.y + self.sep_m + self.sep_g),
                                                 pya.DPoint(coord.x - 2*self.ground_gap_r - self.sep_m - self.sep_g, coord.y - 2*self.ground_gap_r - self.sep_m - self.sep_g)), 4 * self.n)
         region1 = pya.Region(polygon.to_itype(self.layout.dbu))
