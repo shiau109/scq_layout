@@ -20,8 +20,8 @@ class FloatingCouplerV2(ASlib):
     ground_gap_padding = Param(pdt.TypeDouble, "Distance from ground to island", 100, unit="μm")
     padding_reduction = Param(pdt.TypeDouble, "Reduction of padding around the qubit", 40, unit="μm")
     ground_gap_r = Param(pdt.TypeDouble, "Ground gap rounding radius of 'floating qubit'", 95, unit="μm")
-    island1_extent = Param(pdt.TypeList, "Width, height of qubit island (µm, µm)", [510, 175])
-    island1_r = Param(pdt.TypeDouble, "Qubit island rounding radius", 87.5, unit="μm")
+    island1_extent = Param(pdt.TypeList, "Width, height of qubit island (µm, µm)", [375, 100])
+    island1_r = Param(pdt.TypeDouble, "Qubit island rounding radius", 50, unit="μm")
     island1_arm = Param(pdt.TypeList, "Width, height of the qubit island arm (µm, µm)", [150, 225])
     island1_length = Param(pdt.TypeList, "Length of the qubit island that couple to qubit (µm, µm)", [210, 310])
     island_sep = Param(pdt.TypeDouble, "Separation of two island", 30, unit="μm")
@@ -31,8 +31,8 @@ class FloatingCouplerV2(ASlib):
     sep_g = Param(pdt.TypeDouble, "Separation from qubit (gap)", 5, unit="μm")
 
     squid_sep = Param(pdt.TypeDouble, "Distance from SQUID to ground plane", 7)
-    squid_arm_position1 = Param(pdt.TypeList, "Coordinate of squid arm at island1 (w.r.t. corner)", [28, 75])
-    squid_arm_position2 = Param(pdt.TypeList, "Coordinate of squid arm at island2 (w.r.t. corner)", [28, 75])
+    squid_arm_position1 = Param(pdt.TypeList, "Coordinate of squid arm at island1 (w.r.t. corner)", [25, 50])
+    squid_arm_position2 = Param(pdt.TypeList, "Coordinate of squid arm at island2 (w.r.t. corner)", [25, 50])
     flip_squid = Param(pdt.TypeBoolean, "Flip the SQUID axis", False)
 
     fluxline_at_opposite = Param(pdt.TypeBoolean, "Put the fluxline to another side", False)
