@@ -18,16 +18,16 @@ class FloatingCouplerV2(ASlib):
     """
 
     ground_gap_padding = Param(pdt.TypeDouble, "Distance from ground to island", 100, unit="μm")
-    padding_reduction = Param(pdt.TypeDouble, "Reduction of padding around the qubit", 40, unit="μm")
+    padding_reduction = Param(pdt.TypeDouble, "Reduction of padding around the qubit", 60, unit="μm")
     ground_gap_r = Param(pdt.TypeDouble, "Ground gap rounding radius of 'floating qubit'", 95, unit="μm")
-    island1_extent = Param(pdt.TypeList, "Width, height of qubit island (µm, µm)", [375, 100])
+    island1_extent = Param(pdt.TypeList, "Width, height of qubit island (µm, µm)", [450, 85])
     island1_r = Param(pdt.TypeDouble, "Qubit island rounding radius", 50, unit="μm")
-    island1_arm = Param(pdt.TypeList, "Width, height of the qubit island arm (µm, µm)", [150, 225])
-    island1_length = Param(pdt.TypeList, "Length of the qubit island that couple to qubit (µm, µm)", [210, 310])
-    island_sep = Param(pdt.TypeDouble, "Separation of two island", 30, unit="μm")
+    island1_arm = Param(pdt.TypeList, "Width, height of the qubit island arm (µm, µm)", [90, 90])
+    island1_length = Param(pdt.TypeList, "Length of the qubit island that couple to qubit (µm, µm)", [230, 330])
+    island_sep = Param(pdt.TypeDouble, "Separation of two island", 15, unit="μm")
     symmetric = Param(pdt.TypeBoolean, "Whether the coupler is symmetric", False)
 
-    sep_m = Param(pdt.TypeDouble, "Separation from qubit (metal)", 2, unit="μm")
+    sep_m = Param(pdt.TypeDouble, "Separation from qubit (metal)", 3, unit="μm")
     sep_g = Param(pdt.TypeDouble, "Separation from qubit (gap)", 5, unit="μm")
 
     squid_sep = Param(pdt.TypeDouble, "Distance from SQUID to ground plane", 7)
