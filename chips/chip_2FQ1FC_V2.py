@@ -57,12 +57,12 @@ class Chip2FQ1FCV2(ASlib):
         self.insert_cell(LauncherAS, pya.Trans(4950-385-distance, 2550), "launcher_R1", visible=visible)
         self.insert_cell(LauncherAS, pya.Trans(4950-385-distance, 850), "launcher_R2", visible=visible)
         # self.insert_cell(LauncherAS, pya.Trans(4950-385-distance-distance_extra, -850), "launcher_R3", visible=visible)
-        self.insert_cell(LauncherAS, pya.Trans(4950-385-distance, -2550), "launcher_R4", visible=visible)
+        self.insert_cell(LauncherAS, pya.Trans(4950-385-distance, -2550), "launcher_R4", visible=dl_visible)
         
         self.insert_cell(LauncherAS, pya.Trans(-2550, 4950-385-distance) * pya.Trans.R90, "launcher_U1", visible=visible)
         self.insert_cell(LauncherAS, pya.Trans(-850, 4950-385-distance) * pya.Trans.R90, "launcher_U2", visible=visible)
         self.insert_cell(LauncherAS, pya.Trans(850, 4950-385-distance) * pya.Trans.R90, "launcher_U3", visible=visible)
-        self.insert_cell(LauncherAS, pya.Trans(2550, 4950-385-distance) * pya.Trans.R90, "launcher_U4", visible=dl_visible)
+        self.insert_cell(LauncherAS, pya.Trans(2550, 4950-385-distance) * pya.Trans.R90, "launcher_U4", visible=visible)
 
         # self.insert_cell(LauncherAS, pya.Trans(-2550, -4950+385+distance+distance_extra) * pya.Trans.R270, "launcher_D1", visible=visible)
         # self.insert_cell(LauncherAS, pya.Trans(-850, -4950+385+distance+distance_extra) * pya.Trans.R270, "launcher_D2", visible=visible)
@@ -75,7 +75,7 @@ class Chip2FQ1FCV2(ASlib):
 
     def _produce_qubits(self):
         c_visible = False
-        if self.simulation_mode in [0, 1, 2]:
+        if self.simulation_mode in [0, 1, 2, 4]:
             c_visible = True
 
         x, y = -600, 2100 # Position of left qubit
