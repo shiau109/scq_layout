@@ -10,7 +10,7 @@ class FluxLineT(ASlib):
 
     def build(self):
         left_arm_region = self._arm_region()
-        right_arm_region = self._arm_region().transform(pya.Trans.M0)
+        right_arm_region = self._arm_region().transform(pya.DTrans.M0)
         self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(left_arm_region + right_arm_region)
         self.add_port(
             "fluxline",

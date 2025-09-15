@@ -7,11 +7,15 @@ class XyLine(ASlib):
     xyline_throat = Param(pdt.TypeList, "Throat length/a/b of fluxline", [102, 4, 2.6], unit="μm")
     xyline_gap = Param(pdt.TypeDouble, "Length of fluxline along the qubit", 2.6, unit="μm")
     xyline_taper = Param(pdt.TypeDouble, "Length of taper", 50, unit="μm")
+    xyline_cap = Param(pdt.TypeBoolean, "True for q3d simulation", False)
 
     def build(self):
         left_arm_region = self._arm_region()
         right_arm_region = self._arm_region().transform(pya.Trans.M0)
-        self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(left_arm_region + right_arm_region)
+        region = left_arm_region + right_arm_region
+        if self.xyline_cap:
+            region += self._cap_region()
+        self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(region)
         self.add_port(
             "xyline",
             pya.DPoint(self.xyline_throat[0] + self.xyline_taper, 0),
@@ -29,6 +33,23 @@ class XyLine(ASlib):
             pya.DPoint(self.xyline_throat[0], self.xyline_throat[1] / 2),
             pya.DPoint(self.xyline_gap, self.xyline_throat[1] / 2),
             pya.DPoint(self.xyline_gap, 0),
+        ]
+        polygon = pya.DPolygon(points)
+        region = pya.Region(polygon.to_itype(self.layout.dbu))
+        
+        return region
+    
+    def _cap_region(self):
+        extend = 100
+        points = [
+            pya.DPoint(self.xyline_throat[0] + self.xyline_taper, self.a / 2),
+            pya.DPoint(self.xyline_throat[0] + self.xyline_taper, self.a / 2 + self.b),
+            pya.DPoint(self.xyline_throat[0] + self.xyline_taper + extend + self.b, self.a / 2 + self.b),
+            pya.DPoint(self.xyline_throat[0] + self.xyline_taper + extend + self.b, -self.a / 2 - self.b),
+            pya.DPoint(self.xyline_throat[0] + self.xyline_taper, -self.a / 2 - self.b),
+            pya.DPoint(self.xyline_throat[0] + self.xyline_taper, -self.a / 2),
+            pya.DPoint(self.xyline_throat[0] + self.xyline_taper + extend, -self.a / 2),
+            pya.DPoint(self.xyline_throat[0] + self.xyline_taper + extend, self.a / 2),
         ]
         polygon = pya.DPolygon(points)
         region = pya.Region(polygon.to_itype(self.layout.dbu))

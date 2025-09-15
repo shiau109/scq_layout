@@ -28,9 +28,16 @@ class FloatingQubit(ASlib):
     squid_sep = Param(pdt.TypeDouble, "Distance from SQUID to ground plane", 7)
     squid_arm_position1 = Param(pdt.TypeList, "Coordinate of squid arm at island1 (w.r.t. corner)", [28, 55])
     squid_arm_position2 = Param(pdt.TypeList, "Coordinate of squid arm at island2 (w.r.t. corner)", [28, 55])
+    flip_squid = Param(pdt.TypeBoolean, "Flip the SQUID axis", False)
+
+    xyline_at_center = Param(pdt.TypeBoolean, "Put Location of xyline at center", False)
+    xyline_distance = Param(pdt.TypeDouble, "Distance from ground gap region", 0, unit="μm")
 
     fluxline_offset = Param(pdt.TypeDouble, "Offset from squid center", -18, unit="μm")
     fluxline_gap_width = Param(pdt.TypeDouble, "Gap between fluxline and qubit", 6, unit="μm")
+
+    simulation_mode = Param(pdt.TypeInt, "0: none, 1: qubit w/o bus, 2: qubit w/ bus, 3: resonator w/o DL, 4: resonator w/ DL", 0)
+    visible = Param(pdt.TypeBoolean, "Whether the qubit is visible", True)
     
 
     def build(self):
@@ -43,23 +50,26 @@ class FloatingQubit(ASlib):
         # Second island
         island2_region = self._build_island2()
 
-        # Coupler
-        coupler_region = self._build_coupler()
+        region = ground_gap_region - island1_region - island2_region
 
-        # Combine component together
-        region = ground_gap_region - island1_region - island2_region - coupler_region
+        # Coupler
+        if self.visible and self.simulation_mode != 1:
+            region = self._build_coupler(region)
 
         # Add region
-        self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(region)
+        if self.visible:
+            self.cell.shapes(self.get_layer("base_metal_gap_wo_grid")).insert(region)
 
         # Add SQUID
         self.cell.insert(self._add_squid())       
 
         # Add flux line
-        self.cell.insert(self._add_fluxline())
+        if self.visible and self.simulation_mode == 0:
+            self.cell.insert(self._add_fluxline())
 
         # Add xy line
-        self.cell.insert(self._add_xyline())
+        if self.visible and self.simulation_mode in [0, 2]:
+            self.cell.insert(self._add_xyline())
     
     def gap_region(self):
         ground_gap_points = [
@@ -74,11 +84,13 @@ class FloatingQubit(ASlib):
             self.ground_gap_r / self.layout.dbu, self.ground_gap_r / self.layout.dbu, self.n
         )
 
-        # Add coupler port
-        coupler_port_region, r = self._build_coupler_port()
-        ground_gap_region = ground_gap_region + coupler_port_region
-        ground_gap_region.round_corners(r / self.layout.dbu, r / self.layout.dbu, self.n)
-        return ground_gap_region + coupler_port_region
+        # Add refpoints
+        self.refpoints["corner1"] = ground_gap_points[0]
+        self.refpoints["corner2"] = ground_gap_points[1]
+        self.refpoints["corner3"] = ground_gap_points[2]
+        self.refpoints["corner4"] = ground_gap_points[3]
+
+        return ground_gap_region
 
 
     def _build_island1(self):
@@ -121,7 +133,7 @@ class FloatingQubit(ASlib):
         t = pya.Trans(rot=45, u=[0, 0])
         return self._build_island1().transform(pya.Trans.M0)
 
-    def _build_coupler(self):
+    def _build_coupler(self, region):
         r = self.a / 2
         island1_bottom = self.island_sep / 2
         width = self.island1_side_hole[1] / 2 - r
@@ -143,7 +155,40 @@ class FloatingQubit(ASlib):
         coupler_region.round_corners(r / self.layout.dbu, r / self.layout.dbu, self.n)
         if self.coupler_at_island2:
             coupler_region = coupler_region.transform(pya.Trans.M0)
-        return coupler_region
+
+        # Add coupler port
+        coupler_port_region, r = self._build_coupler_port()
+        region += coupler_port_region
+        region.round_corners(r / self.layout.dbu, r / self.layout.dbu, self.n)
+
+        if self.simulation_mode == 2:
+            extend = 100
+            cap_polygon = pya.DPolygon(
+                [
+                    pya.DPoint(-float(self.ground_gap[0]) / 2 - r,
+                            island1_bottom + float(self.island1_extent[1]) / 2 + self.a / 2),
+                    pya.DPoint(-float(self.ground_gap[0]) / 2 - r - extend,
+                            island1_bottom + float(self.island1_extent[1]) / 2 + self.a / 2),
+                    pya.DPoint(-float(self.ground_gap[0]) / 2 - r - extend,
+                            island1_bottom + float(self.island1_extent[1]) / 2 - self.a / 2),
+                    pya.DPoint(-float(self.ground_gap[0]) / 2 - r,
+                            island1_bottom + float(self.island1_extent[1]) / 2 - self.a / 2),
+                    pya.DPoint(-float(self.ground_gap[0]) / 2 - r,
+                            island1_bottom + float(self.island1_extent[1]) / 2 - self.a / 2 - self.b),
+                    pya.DPoint(-float(self.ground_gap[0]) / 2 - r - extend - self.b,
+                            island1_bottom + float(self.island1_extent[1]) / 2 - self.a / 2 - self.b),
+                    pya.DPoint(-float(self.ground_gap[0]) / 2 - r - extend - self.b,
+                            island1_bottom + float(self.island1_extent[1]) / 2 + self.a / 2 + self.b),
+                    pya.DPoint(-float(self.ground_gap[0]) / 2 - r,
+                            island1_bottom + float(self.island1_extent[1]) / 2 + self.a / 2 + self.b),
+                ]
+            )
+            cap_region = pya.Region(cap_polygon.to_itype(self.layout.dbu))
+            if self.coupler_at_island2:
+                cap_region = cap_region.transform(pya.Trans.M0)
+
+            coupler_port_region += cap_region  
+        return region + coupler_port_region - coupler_region
         
     def _build_coupler_port(self):
         island1_bottom = self.island_sep / 2
@@ -176,7 +221,7 @@ class FloatingQubit(ASlib):
         transx = self.ground_gap[0] / 2 - self.squid_sep
         upt = [self.island1_extent[0] / 2 - self.squid_arm_position1[0] - transx, self.island_sep / 2 + self.squid_arm_position1[1]]
         dpt = [self.island2_extent[0] / 2 - self.squid_arm_position2[0] - transx, -self.island_sep / 2 - self.squid_arm_position2[1]]
-        cell = self.add_element(SquidAS, up_arm_connect_pt=upt, down_arm_connect_pt=dpt)
+        cell = self.add_element(SquidAS, up_arm_connect_pt=upt, down_arm_connect_pt=dpt, flip=self.flip_squid)
         cell_inst, _ = self.insert_cell(cell, pya.DTrans(transx, 0))
         return cell_inst
     
@@ -188,7 +233,13 @@ class FloatingQubit(ASlib):
     
     def _add_xyline(self):
         island1_bottom = self.island_sep / 2
-        cell = self.add_element(XyLine)
-        cell_inst, _ = self.insert_cell(cell, pya.DTrans(self.ground_gap[0] / 2, island1_bottom + float(self.island1_extent[1]) / 2))
+        if self.simulation_mode == 2:
+            cell = self.add_element(XyLine, xyline_cap=True)
+        else:
+            cell = self.add_element(XyLine, xyline_cap=False)
+        if self.xyline_at_center:
+            cell_inst, _ = self.insert_cell(cell, pya.DTrans(0, self.ground_gap[1] / 2 + self.xyline_distance) * pya.DTrans.R90)
+        else:
+            cell_inst, _ = self.insert_cell(cell, pya.DTrans(self.ground_gap[0] / 2 + self.xyline_distance, island1_bottom + float(self.island1_extent[1]) / 2))
         self.copy_port("xyline", cell_inst)
         return cell_inst
