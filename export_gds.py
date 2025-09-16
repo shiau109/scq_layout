@@ -24,6 +24,9 @@ def export_chip_gds(filename, Chip, **params):
     regionC = pya.Region(top.begin_shapes_rec(layerC))
     regionD = pya.Region(top.begin_shapes_rec(layerD))
 
+    if "arm_add_to_metal" in params.keys() and params["arm_add_to_metal"] == True:
+        result = (result + regionD).merge()
+
     # Assign patterns to layers
     top.shapes(layout.layer(pya.LayerInfo(1, 0))).insert(result)
     top.shapes(layout.layer(pya.LayerInfo(2, 0))).insert(regionC)
