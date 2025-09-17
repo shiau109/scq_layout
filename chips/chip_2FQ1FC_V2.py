@@ -79,15 +79,15 @@ class Chip2FQ1FCV2(ASlib):
             c_visible = True
 
         x, y = -600, 2100 # Position of left qubit
-        self.insert_cell(FloatingQubit, pya.Trans(x, y) * pya.Trans.R90, "Q0", fluxline_offset=12, xyline_at_center=True, xyline_distance=10, island1_side_hole=[self.grq_length, 30])
+        self.insert_cell(FloatingQubit, pya.Trans(x, y) * pya.Trans.R90, "Q0", flip_squid=True, fluxline_offset=12, xyline_at_center=True, xyline_distance=10, island1_side_hole=[self.grq_length, 30])
 
-        cell = self.add_element(FloatingCouplerV2, fluxline_at_opposite=True, flip_squid=True, fluxline_offset=-17, visible=c_visible)
+        cell = self.add_element(FloatingCouplerV2, fluxline_at_opposite=True, fluxline_offset=-17, visible=c_visible)
         self.insert_cell(cell, pya.DTrans(self.refpoints["Q0_corner2"] - self.get_refpoints(cell, pya.DTrans())["qubit1"]), "C0")
 
-        cell = self.add_element(FloatingQubit, xyline_at_center=True, xyline_distance=10, island1_side_hole=[self.grq_length, 30])
+        cell = self.add_element(FloatingQubit, flip_squid=True, xyline_at_center=True, xyline_distance=10, island1_side_hole=[self.grq_length, 30])
         self.insert_cell(cell, pya.DTrans(self.refpoints["C0_qubit2"] - self.get_refpoints(cell, pya.Trans.R90 * pya.Trans.M0)["corner3"]) * pya.Trans.R90 * pya.Trans.M0, "Q1")
 
-        self.insert_cell(FloatingQubit, pya.Trans(2000, y) * pya.Trans.R90 * pya.Trans.M0, "Q2", fluxline_offset=12, xyline_at_center=True, xyline_distance=10, island1_side_hole=[self.grq_length, 30])
+        self.insert_cell(FloatingQubit, pya.Trans(2000, y) * pya.Trans.R90 * pya.Trans.M0, "Q2", flip_squid=True, fluxline_offset=12, xyline_at_center=True, xyline_distance=10, island1_side_hole=[self.grq_length, 30])
 
         
     def _produce_driveline(self):
