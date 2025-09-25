@@ -12,7 +12,8 @@ from numpy import pi
 
 class Chip10FQ9FCV2(ASlib):
     readout_lengths = Param(pdt.TypeList, "Readout resonator lengths", [4607.446073, 4530.163422, 4687.390981], unit="[μm]")
-    readout_sep = Param(pdt.TypeDouble, "Ground gap rounding radius", 3, unit="μm")
+    length_PF = Param(pdt.TypeDouble, "Length of purcell filter resonator", 8500, unit="μm")
+    readout_sep = Param(pdt.TypeDouble, "Ground gap rounding radius", 13, unit="μm")
     #ground_gap_padding = Param(pdt.TypeDouble, "Distance from ground to island", 81, unit="μm")
     #island1_length = Param(pdt.TypeDouble, "Length of the qubit island that couple to qubit", 170, unit="μm")
     grq_length = Param(pdt.TypeDouble, "Length of the qubit island that couple to readout resonator", 80, unit="μm")
@@ -22,10 +23,12 @@ class Chip10FQ9FCV2(ASlib):
     def build(self):
         self._produce_frame()
         self._produce_qubits()
-        self._produce_gateline_left()
-        self._produce_gateline_right()
+        if self.simulation_mode == 0:
+            self._produce_gateline_left()
+            self._produce_gateline_right()
         if self.simulation_mode in [0, 4]:
-            self._produce_driveline()
+            self._produce_readout_set(1)
+            self._produce_readout_set(-1)
         
         # if self.simulation_mode == 0:
         #     self._produce_fluxline()
@@ -84,41 +87,86 @@ class Chip10FQ9FCV2(ASlib):
 
 
         
-    def _produce_driveline(self):
-        x_twist_1, x_twist_2 = -4000, 4000
+    def _produce_readout_set(self, factor):
+        center, extent = pya.DPoint(-factor*200, -factor*4800), 4000        
+        if factor == 1:
+            lanucher1, lanucher2 = "launcher_D13_base", "launcher_D10_base"
+            t = pya.Trans()
+        else:
+            lanucher1, lanucher2 = "launcher_U6_base", "launcher_U9_base"
+            t = pya.DTrans.M90
+        
+        cap_param = {
+            "finger_width":3.3,
+            "finger_gap":3.3,
+            "finger_length":100,
+            "taper_length":150
+        }
 
-        # h = (self.purcell_length - (x_twist_2 - x_twist_1) + 4*self.r - pi*self.r) / 2
-
-        finger_width=3.3
-        finger_gap=3.3
-        finger_length=100
-        taper_length=150
-        # length_C = 2 * taper_length + finger_length + finger_gap
-        t1 = pya.Trans(self.refpoints[f"launcher_D15_base"].x, self.refpoints[f"launcher_D15_base"].y + 2500) * pya.Trans.R90 
-        self.insert_cell(FingerCapacitorTaper, t1, "C1", finger_number=8 , finger_width=finger_width, finger_gap=finger_gap, finger_length=finger_length, taper_length=taper_length)
-        t2 = pya.Trans(self.refpoints[f"launcher_D12_base"].x - 500, self.refpoints[f"launcher_D12_base"].y + 1000)
-        self.insert_cell(FingerCapacitorTaper, t2, "C2", finger_number=22, finger_width=finger_width, finger_gap=finger_gap, finger_length=finger_length, taper_length=taper_length)
-
-        delta = self.refpoints[f"launcher_D15_base"].x - (self.refpoints[f"launcher_D12_base"].x + 500)
+        # Side 1
+        t1 = pya.Trans(self.refpoints[lanucher1].x, center.y + factor * (extent/2**1.5 - 350)) * pya.DTrans.R90 * t
+        self.insert_cell(FingerCapacitorTaper, t1, "C1", finger_number=8, **cap_param)
 
         self.insert_cell(
             WaveguideComposite,
-            nodes=[Node(self.refpoints[f"launcher_D12_base"]),
-                   Node(pya.DPoint(self.refpoints[f"launcher_D12_base"].x, self.refpoints[f"launcher_D12_base"].y + 1000)),
+            nodes=[Node(self.refpoints[lanucher1]),
+                   Node(self.refpoints[f"C1_port_a"])])
+        
+        WaveguideComposite.produce_fixed_length_waveguide(
+            self,
+            lambda x: [
+                Node(center),
+                Node(pya.DPoint(center.x + factor*extent/2**1.5, center.y + factor*extent/2**1.5)),
+                Node(pya.DPoint(self.refpoints[f"C1_port_b"].x - factor*900, center.y + factor*extent/2**1.5)),
+                Node(pya.DPoint(self.refpoints[f"C1_port_b"].x - factor*200, center.y + factor*extent/2**1.5), length_before=x, meander_direction=-1),
+                Node(pya.DPoint(self.refpoints[f"C1_port_b"].x, center.y + factor*extent/2**1.5)),
+                Node(self.refpoints[f"C1_port_b"])],
+            initial_guess=1000,
+            length=self.length_PF/2,
+        )
+
+
+        # Side 2
+        t2 = pya.Trans(self.refpoints[lanucher2].x - factor*500, center.y - factor*extent/2**1.5) * t
+        self.insert_cell(FingerCapacitorTaper, t2, "C2", finger_number=22, **cap_param)
+
+        self.insert_cell(
+            WaveguideComposite,
+            nodes=[Node(self.refpoints[lanucher2]),
+                   Node(pya.DPoint(self.refpoints[lanucher2].x, self.refpoints[f"C2_port_b"].y)),
                    Node(self.refpoints[f"C2_port_b"])])
         
-        self.insert_cell(
-            WaveguideComposite,
-            nodes=[Node(self.refpoints[f"C2_port_a"]),
-                   Node(pya.DPoint(self.refpoints[f"launcher_D12_base"].x - 3000, self.refpoints[f"launcher_D12_base"].y + 1000), length_before=2500),
-                   Node(pya.DPoint(self.refpoints[f"launcher_D12_base"].x + 500, self.refpoints[f"launcher_D12_base"].y + 4500)),
-                   Node(pya.DPoint(self.refpoints[f"launcher_D12_base"].x + 500 + delta, self.refpoints[f"launcher_D12_base"].y + 4500 - delta)),
-                   Node(self.refpoints[f"C1_port_b"])])
-        
-        self.insert_cell(
-            WaveguideComposite,
-            nodes=[Node(self.refpoints[f"launcher_D15_base"]),
-                   Node(self.refpoints[f"C1_port_a"])])
+        WaveguideComposite.produce_fixed_length_waveguide(
+            self,
+            lambda x: [
+                Node(center),
+                Node(pya.DPoint(center.x - factor*extent/2**1.5, self.refpoints[f"C2_port_a"].y)),
+                Node(pya.DPoint(self.refpoints[f"C2_port_a"].x - factor*750, self.refpoints[f"C2_port_a"].y)),
+                Node(pya.DPoint(self.refpoints[f"C2_port_a"].x - factor*50, self.refpoints[f"C2_port_a"].y), length_before=x, meander_direction=-1),
+                Node(self.refpoints[f"C2_port_a"])],
+            initial_guess=1000,
+            length=self.length_PF/2,
+        )
+
+        # Meanders
+        w = 300
+        spacing = 700
+        shift = self.a + 2*self.b + self.readout_sep
+        for i in range(5):
+            q = i if factor==1 else 9-i
+            WaveguideComposite.produce_fixed_length_waveguide(
+                self,
+                lambda x: [
+                    Node(pya.DPoint(center.x + (-shift + spacing * (i - 2) + w) / 2**0.5 * factor, center.y + (shift + spacing * (i - 2) + w) / 2**0.5 * factor)),
+                    Node(pya.DPoint(center.x + (-shift + spacing * (i - 2)) / 2**0.5 * factor, center.y + (shift + spacing * (i - 2)) / 2**0.5 * factor)),
+                    Node(pya.DPoint(center.x + ((-shift + spacing * (i - 2)) / 2**0.5 - 300 - 200*(4-i)) * factor, center.y + (shift + spacing * (i - 2)) / 2**0.5 * factor)),
+                    Node(pya.DPoint(center.x + ((-shift + spacing * (i - 2)) / 2**0.5 - 1000 - 200*(4-i)) * factor, center.y + (shift + spacing * (i - 2)) / 2**0.5 * factor), length_before=x),
+                    Node(pya.DPoint(self.refpoints["Q"+str(q)+"_port_coupler"].x, center.y + (shift + spacing * (i - 2)) / 2**0.5 * factor)),
+                    Node(self.refpoints["Q"+str(q)+"_port_coupler"])],
+                initial_guess=1000,
+                length=4500,
+            )
+
     
     
     def _produce_gateline_left(self):
