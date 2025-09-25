@@ -24,20 +24,9 @@ class Chip10FQ9FCV2(ASlib):
         if self.simulation_mode == 0:
             self._produce_gateline_left()
             self._produce_gateline_right()
+            self._produce_readout_set(-1)
         if self.simulation_mode in [0, 3, 4]:
             self._produce_readout_set(1)
-            self._produce_readout_set(-1)
-        
-        # if self.simulation_mode == 0:
-        #     self._produce_fluxline()
-        #     self._produce_xyline("L1", "Q0", 1, 0)
-        #     self._produce_xyline("U4", "Q1", 0, -1)
-        #     self._produce_xyline("R2", "Q2", -1, 0)
-
-        # if self.simulation_mode in [0, 3, 4]:
-        #     self._produce_readout_resonator(self.refpoints["Q0_port_coupler"], self.readout_lengths[0])
-        #     self._produce_readout_resonator(self.refpoints["Q1_port_coupler"], self.readout_lengths[1])
-        #     self._produce_readout_resonator(self.refpoints["Q2_port_coupler"], self.readout_lengths[2])
 
     def _produce_frame(self):
         box_1 = pya.DBox(-8300, -8300, 8300, 8300)
@@ -59,7 +48,7 @@ class Chip10FQ9FCV2(ASlib):
         for i in range(20):
             self.insert_cell(LauncherAS, pya.Trans(-8250+385+distance, (i - 9.5) * distance_bet_launcher) * pya.Trans.R180, "launcher_L"+str(i), visible=visible)
             self.insert_cell(LauncherAS, pya.Trans(8250-385-distance, (i - 9.5) * distance_bet_launcher), "launcher_R"+str(i), visible=visible)
-            self.insert_cell(LauncherAS, pya.Trans((i - 9.5) * distance_bet_launcher, 8250-385-distance) * pya.Trans.R90, "launcher_U"+str(i), visible=dl_visible if i in [6, 9] else visible)
+            self.insert_cell(LauncherAS, pya.Trans((i - 9.5) * distance_bet_launcher, 8250-385-distance) * pya.Trans.R90, "launcher_U"+str(i), visible=visible)
             self.insert_cell(LauncherAS, pya.Trans((i - 9.5) * distance_bet_launcher, -8250+385+distance) * pya.Trans.R270, "launcher_D"+str(i), visible=dl_visible if i in [10, 13] else visible)
             
             
@@ -70,17 +59,20 @@ class Chip10FQ9FCV2(ASlib):
             c_visible = True
 
         x, y = -4220, -5120 # Position of left qubit
-        self.insert_cell(FloatingQubit, pya.Trans(x, y) * pya.Trans.R90, "Q0", flip_squid=True, fluxline_offset=12, xyline_distance=1, island1_side_hole=[self.grq_length, 30], coupler_at_island2=True)
+        self.insert_cell(FloatingQubit, pya.Trans(x, y) * pya.Trans.R90, "Q0", flip_squid=False, fluxline_offset=12, xyline_at_center=True, xyline_distance=10, xyline_offset=100, island1_side_hole=[self.grq_length, 30], coupler_at_island2=True)
         
         t, corner1, corner2, flip = pya.Trans.R90, "corner2", "corner4", True
         for i in range(9):
-            cell = self.add_element(FloatingCouplerV2, fluxline_at_opposite=flip, fluxline_offset=-17, visible=c_visible)
+            if i == 4 and self.simulation_mode != 0:
+                break
+
+            cell = self.add_element(FloatingCouplerV2, flip_squid=flip, fluxline_at_opposite=flip, fluxline_offset=-17, visible=c_visible)
             self.insert_cell(cell, pya.DTrans(self.refpoints["Q"+str(i)+"_"+corner1] - self.get_refpoints(cell, pya.DTrans())["qubit1"]), "C"+str(i))
 
             if i == 4:
                 t, corner1, corner2, flip = pya.Trans.R270, "corner4", "corner2", False
 
-            cell = self.add_element(FloatingQubit, flip_squid=flip, fluxline_offset=12, xyline_distance=1, island1_side_hole=[self.grq_length, 30], coupler_at_island2=True)
+            cell = self.add_element(FloatingQubit, flip_squid=(not flip), fluxline_offset=12, xyline_at_center=True, xyline_distance=10, xyline_offset=100, island1_side_hole=[self.grq_length, 30], coupler_at_island2=True)
             self.insert_cell(cell, pya.DTrans(self.refpoints["C"+str(i)+"_qubit2"] - self.get_refpoints(cell, t)[corner2]) * t, "Q"+str(i+1))
 
 
@@ -171,17 +163,18 @@ class Chip10FQ9FCV2(ASlib):
     def _produce_gateline_left(self):
         start_launcher = 5
         for i in range(5):
-            h1 = 50
+            h1 = 500
             delta1 = self.refpoints["launcher_L"+str(start_launcher+3*i)+"_base"].y - (self.refpoints["Q"+str(i)+"_port_xyline"].y + h1)
             self.insert_cell(
                 WaveguideComposite,
                 nodes=[Node(self.refpoints["launcher_L"+str(start_launcher+3*i)+"_base"]),
-                    Node(pya.DPoint(self.refpoints["Q"+str(i)+"_port_xyline"].x - delta1, self.refpoints["launcher_L"+str(start_launcher+3*i)+"_base"].y)),
-                    Node(pya.DPoint(self.refpoints["Q"+str(i)+"_port_xyline"].x, self.refpoints["Q"+str(i)+"_port_xyline"].y + h1)),
+                    Node(pya.DPoint(self.refpoints["Q"+str(i)+"_port_xyline"].x - 200 - delta1, self.refpoints["launcher_L"+str(start_launcher+3*i)+"_base"].y)),
+                    Node(pya.DPoint(self.refpoints["Q"+str(i)+"_port_xyline"].x - 200, self.refpoints["Q"+str(i)+"_port_xyline"].y + h1)),
+                    Node(pya.DPoint(self.refpoints["Q"+str(i)+"_port_xyline"].x - 200, self.refpoints["Q"+str(i)+"_port_xyline"].y)),
                     Node(self.refpoints["Q"+str(i)+"_port_xyline"])
                     ])
             
-            h2 = 500
+            h2 = 200
             delta2 = self.refpoints["launcher_L"+str(start_launcher+3*i+1)+"_base"].y - (self.refpoints["Q"+str(i)+"_port_fluxline"].y + h2)
             self.insert_cell(
                 WaveguideComposite,
@@ -191,31 +184,33 @@ class Chip10FQ9FCV2(ASlib):
                     Node(self.refpoints["Q"+str(i)+"_port_fluxline"])
                     ])
             
-            h3 = 500
-            delta3 = self.refpoints["launcher_L"+str(start_launcher+3*i+2)+"_base"].y - (self.refpoints["C"+str(i)+"_port_fluxline_corner"].y + h3)
+            h3 = 300
+            pt = self.refpoints["C"+str(i)+"_port_fluxline"] + (self.refpoints["C"+str(i)+"_port_fluxline_corner"] - self.refpoints["C"+str(i)+"_port_fluxline"]) * 4
+            delta3 = self.refpoints["launcher_L"+str(start_launcher+3*i+2)+"_base"].y - (pt.y + h3)
             self.insert_cell(
                 WaveguideComposite,
                 nodes=[Node(self.refpoints["launcher_L"+str(start_launcher+3*i+2)+"_base"]),
-                    Node(pya.DPoint(self.refpoints["C"+str(i)+"_port_fluxline_corner"].x - delta3, self.refpoints["launcher_L"+str(start_launcher+3*i+2)+"_base"].y)),
-                    Node(pya.DPoint(self.refpoints["C"+str(i)+"_port_fluxline_corner"].x, self.refpoints["C"+str(i)+"_port_fluxline_corner"].y + h3)),
-                    Node(self.refpoints["C"+str(i)+"_port_fluxline_corner"]),
+                    Node(pya.DPoint(pt.x - delta3, self.refpoints["launcher_L"+str(start_launcher+3*i+2)+"_base"].y)),
+                    Node(pya.DPoint(pt.x, pt.y + h3)),
+                    Node(pt),
                     Node(self.refpoints["C"+str(i)+"_port_fluxline"])
                     ])
     
     def _produce_gateline_right(self):
-        start_launcher = 0
+        start_launcher = 1
         for i in range(5):
-            h1 = 50
+            h1 = 500
             delta1 = self.refpoints["launcher_R"+str(start_launcher+3*i+1)+"_base"].y - (self.refpoints["Q"+str(i+5)+"_port_xyline"].y - h1)
             self.insert_cell(
                 WaveguideComposite,
                 nodes=[Node(self.refpoints["launcher_R"+str(start_launcher+3*i+1)+"_base"]),
-                    Node(pya.DPoint(self.refpoints["Q"+str(i+5)+"_port_xyline"].x - delta1, self.refpoints["launcher_R"+str(start_launcher+3*i+1)+"_base"].y)),
-                    Node(pya.DPoint(self.refpoints["Q"+str(i+5)+"_port_xyline"].x, self.refpoints["Q"+str(i+5)+"_port_xyline"].y - h1)),
+                    Node(pya.DPoint(self.refpoints["Q"+str(i+5)+"_port_xyline"].x + 200 - delta1, self.refpoints["launcher_R"+str(start_launcher+3*i+1)+"_base"].y)),
+                    Node(pya.DPoint(self.refpoints["Q"+str(i+5)+"_port_xyline"].x + 200, self.refpoints["Q"+str(i+5)+"_port_xyline"].y - h1)),
+                    Node(pya.DPoint(self.refpoints["Q"+str(i+5)+"_port_xyline"].x + 200, self.refpoints["Q"+str(i+5)+"_port_xyline"].y)),
                     Node(self.refpoints["Q"+str(i+5)+"_port_xyline"])
                     ])
             
-            h2 = 500
+            h2 = 200
             delta2 = self.refpoints["launcher_R"+str(start_launcher+3*i)+"_base"].y - (self.refpoints["Q"+str(i+5)+"_port_fluxline"].y - h2)
             self.insert_cell(
                 WaveguideComposite,
@@ -225,14 +220,15 @@ class Chip10FQ9FCV2(ASlib):
                     Node(self.refpoints["Q"+str(i+5)+"_port_fluxline"])
                     ])
             if i < 4:
-                h3 = 500
-                delta3 = self.refpoints["launcher_R"+str(start_launcher+3*i+2)+"_base"].y - (self.refpoints["C"+str(i+5)+"_port_fluxline_corner"].y - h3)
+                h3 = 300
+                pt = self.refpoints["C"+str(i+5)+"_port_fluxline"] + (self.refpoints["C"+str(i+5)+"_port_fluxline_corner"] - self.refpoints["C"+str(i+5)+"_port_fluxline"]) * 4
+                delta3 = self.refpoints["launcher_R"+str(start_launcher+3*i+2)+"_base"].y - (pt.y - h3)
                 self.insert_cell(
                     WaveguideComposite,
                     nodes=[Node(self.refpoints["launcher_R"+str(start_launcher+3*i+2)+"_base"]),
-                        Node(pya.DPoint(self.refpoints["C"+str(i+5)+"_port_fluxline_corner"].x - delta3, self.refpoints["launcher_R"+str(start_launcher+3*i+2)+"_base"].y)),
-                        Node(pya.DPoint(self.refpoints["C"+str(i+5)+"_port_fluxline_corner"].x, self.refpoints["C"+str(i+5)+"_port_fluxline_corner"].y - h3)),
-                        Node(self.refpoints["C"+str(i+5)+"_port_fluxline_corner"]),
+                        Node(pya.DPoint(pt.x - delta3, self.refpoints["launcher_R"+str(start_launcher+3*i+2)+"_base"].y)),
+                        Node(pya.DPoint(pt.x, pt.y - h3)),
+                        Node(pt),
                         Node(self.refpoints["C"+str(i+5)+"_port_fluxline"])
                         ])
        
