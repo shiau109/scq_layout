@@ -208,11 +208,18 @@ class FloatingQubit(ASlib):
             ]
         )
         coupler_port_region = pya.Region(coupler_port_polygon.to_itype(self.layout.dbu))
-        self.add_port(
-            "coupler",
-            pya.DPoint(-float(self.ground_gap[0]) / 2 - r, island1_bottom + float(self.island1_extent[1]) / 2),
-            direction=pya.DVector(pya.DPoint(-1, 0)),
-        )
+        if self.coupler_at_island2:
+            self.add_port(
+                "coupler",
+                pya.DPoint(-float(self.ground_gap[0]) / 2 - r, island1_bottom + float(self.island1_extent[1]) / 2) * pya.DTrans.M0,
+                direction=pya.DVector(pya.DPoint(-1, 0)),
+            )
+        else:
+            self.add_port(
+                "coupler",
+                pya.DPoint(-float(self.ground_gap[0]) / 2 - r, island1_bottom + float(self.island1_extent[1]) / 2),
+                direction=pya.DVector(pya.DPoint(-1, 0)),
+            )
         if self.coupler_at_island2:
             coupler_port_region = coupler_port_region.transform(pya.Trans.M0)
         return coupler_port_region, r
