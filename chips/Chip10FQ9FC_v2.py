@@ -11,11 +11,9 @@ from kqcircuits.elements.finger_capacitor_taper import FingerCapacitorTaper
 from numpy import pi
 
 class Chip10FQ9FCV2(ASlib):
-    readout_lengths = Param(pdt.TypeList, "Readout resonator lengths", [4607.446073, 4530.163422, 4687.390981], unit="[μm]")
-    length_PF = Param(pdt.TypeDouble, "Length of purcell filter resonator", 8500, unit="μm")
+    readout_lengths = Param(pdt.TypeList, "Readout resonator lengths", [4529.689996, 4567.220540, 4605.927500, 4645.810878, 4686.870674], unit="[μm]")
+    length_PF = Param(pdt.TypeDouble, "Length of purcell filter resonator", 7965.5, unit="μm")
     readout_sep = Param(pdt.TypeDouble, "Ground gap rounding radius", 13, unit="μm")
-    #ground_gap_padding = Param(pdt.TypeDouble, "Distance from ground to island", 81, unit="μm")
-    #island1_length = Param(pdt.TypeDouble, "Length of the qubit island that couple to qubit", 170, unit="μm")
     grq_length = Param(pdt.TypeDouble, "Length of the qubit island that couple to readout resonator", 80, unit="μm")
 
     simulation_mode = Param(pdt.TypeInt, "0: none, 1: qubit w/o bus, 2: qubit w/ bus, 3: resonator w/o DL, 4: resonator w/ DL", 0)
@@ -26,7 +24,7 @@ class Chip10FQ9FCV2(ASlib):
         if self.simulation_mode == 0:
             self._produce_gateline_left()
             self._produce_gateline_right()
-        if self.simulation_mode in [0, 4]:
+        if self.simulation_mode in [0, 3, 4]:
             self._produce_readout_set(1)
             self._produce_readout_set(-1)
         
@@ -61,8 +59,8 @@ class Chip10FQ9FCV2(ASlib):
         for i in range(20):
             self.insert_cell(LauncherAS, pya.Trans(-8250+385+distance, (i - 9.5) * distance_bet_launcher) * pya.Trans.R180, "launcher_L"+str(i), visible=visible)
             self.insert_cell(LauncherAS, pya.Trans(8250-385-distance, (i - 9.5) * distance_bet_launcher), "launcher_R"+str(i), visible=visible)
-            self.insert_cell(LauncherAS, pya.Trans((i - 9.5) * distance_bet_launcher, 8250-385-distance) * pya.Trans.R90, "launcher_U"+str(i), visible=visible)
-            self.insert_cell(LauncherAS, pya.Trans((i - 9.5) * distance_bet_launcher, -8250+385+distance) * pya.Trans.R270, "launcher_D"+str(i), visible=visible)
+            self.insert_cell(LauncherAS, pya.Trans((i - 9.5) * distance_bet_launcher, 8250-385-distance) * pya.Trans.R90, "launcher_U"+str(i), visible=dl_visible if i in [6, 9] else visible)
+            self.insert_cell(LauncherAS, pya.Trans((i - 9.5) * distance_bet_launcher, -8250+385+distance) * pya.Trans.R270, "launcher_D"+str(i), visible=dl_visible if i in [10, 13] else visible)
             
             
 
@@ -103,50 +101,51 @@ class Chip10FQ9FCV2(ASlib):
             "taper_length":150
         }
 
-        # Side 1
-        t1 = pya.Trans(self.refpoints[lanucher1].x, center.y + factor * (extent/2**1.5 - 350)) * pya.DTrans.R90 * t
-        self.insert_cell(FingerCapacitorTaper, t1, "C1", finger_number=8, **cap_param)
+        if self.simulation_mode in [0, 4]:
+            # Side 1
+            t1 = pya.Trans(self.refpoints[lanucher1].x, center.y + factor * (extent/2**1.5 - 350)) * pya.DTrans.R90 * t
+            self.insert_cell(FingerCapacitorTaper, t1, "C1", finger_number=8, **cap_param)
 
-        self.insert_cell(
-            WaveguideComposite,
-            nodes=[Node(self.refpoints[lanucher1]),
-                   Node(self.refpoints[f"C1_port_a"])])
-        
-        WaveguideComposite.produce_fixed_length_waveguide(
-            self,
-            lambda x: [
-                Node(center),
-                Node(pya.DPoint(center.x + factor*extent/2**1.5, center.y + factor*extent/2**1.5)),
-                Node(pya.DPoint(self.refpoints[f"C1_port_b"].x - factor*900, center.y + factor*extent/2**1.5)),
-                Node(pya.DPoint(self.refpoints[f"C1_port_b"].x - factor*200, center.y + factor*extent/2**1.5), length_before=x, meander_direction=-1),
-                Node(pya.DPoint(self.refpoints[f"C1_port_b"].x, center.y + factor*extent/2**1.5)),
-                Node(self.refpoints[f"C1_port_b"])],
-            initial_guess=1000,
-            length=self.length_PF/2,
-        )
+            self.insert_cell(
+                WaveguideComposite,
+                nodes=[Node(self.refpoints[lanucher1]),
+                    Node(self.refpoints[f"C1_port_a"])])
+            
+            WaveguideComposite.produce_fixed_length_waveguide(
+                self,
+                lambda x: [
+                    Node(center),
+                    Node(pya.DPoint(center.x + factor*extent/2**1.5, center.y + factor*extent/2**1.5)),
+                    Node(pya.DPoint(self.refpoints[f"C1_port_b"].x - factor*900, center.y + factor*extent/2**1.5)),
+                    Node(pya.DPoint(self.refpoints[f"C1_port_b"].x - factor*200, center.y + factor*extent/2**1.5), length_before=x, meander_direction=-1),
+                    Node(pya.DPoint(self.refpoints[f"C1_port_b"].x, center.y + factor*extent/2**1.5)),
+                    Node(self.refpoints[f"C1_port_b"])],
+                initial_guess=1000,
+                length=self.length_PF/2,
+            )
 
 
-        # Side 2
-        t2 = pya.Trans(self.refpoints[lanucher2].x - factor*500, center.y - factor*extent/2**1.5) * t
-        self.insert_cell(FingerCapacitorTaper, t2, "C2", finger_number=22, **cap_param)
+            # Side 2
+            t2 = pya.Trans(self.refpoints[lanucher2].x - factor*500, center.y - factor*extent/2**1.5) * t
+            self.insert_cell(FingerCapacitorTaper, t2, "C2", finger_number=22, **cap_param)
 
-        self.insert_cell(
-            WaveguideComposite,
-            nodes=[Node(self.refpoints[lanucher2]),
-                   Node(pya.DPoint(self.refpoints[lanucher2].x, self.refpoints[f"C2_port_b"].y)),
-                   Node(self.refpoints[f"C2_port_b"])])
-        
-        WaveguideComposite.produce_fixed_length_waveguide(
-            self,
-            lambda x: [
-                Node(center),
-                Node(pya.DPoint(center.x - factor*extent/2**1.5, self.refpoints[f"C2_port_a"].y)),
-                Node(pya.DPoint(self.refpoints[f"C2_port_a"].x - factor*750, self.refpoints[f"C2_port_a"].y)),
-                Node(pya.DPoint(self.refpoints[f"C2_port_a"].x - factor*50, self.refpoints[f"C2_port_a"].y), length_before=x, meander_direction=-1),
-                Node(self.refpoints[f"C2_port_a"])],
-            initial_guess=1000,
-            length=self.length_PF/2,
-        )
+            self.insert_cell(
+                WaveguideComposite,
+                nodes=[Node(self.refpoints[lanucher2]),
+                    Node(pya.DPoint(self.refpoints[lanucher2].x, self.refpoints[f"C2_port_b"].y)),
+                    Node(self.refpoints[f"C2_port_b"])])
+            
+            WaveguideComposite.produce_fixed_length_waveguide(
+                self,
+                lambda x: [
+                    Node(center),
+                    Node(pya.DPoint(center.x - factor*extent/2**1.5, self.refpoints[f"C2_port_a"].y)),
+                    Node(pya.DPoint(self.refpoints[f"C2_port_a"].x - factor*750, self.refpoints[f"C2_port_a"].y)),
+                    Node(pya.DPoint(self.refpoints[f"C2_port_a"].x - factor*50, self.refpoints[f"C2_port_a"].y), length_before=x, meander_direction=-1),
+                    Node(self.refpoints[f"C2_port_a"])],
+                initial_guess=1000,
+                length=self.length_PF/2,
+            )
 
         # Meanders
         w = 300
@@ -164,7 +163,7 @@ class Chip10FQ9FCV2(ASlib):
                     Node(pya.DPoint(self.refpoints["Q"+str(q)+"_port_coupler"].x, center.y + (shift + spacing * (i - 2)) / 2**0.5 * factor)),
                     Node(self.refpoints["Q"+str(q)+"_port_coupler"])],
                 initial_guess=1000,
-                length=4500,
+                length=self.readout_lengths[i],
             )
 
     
@@ -236,77 +235,4 @@ class Chip10FQ9FCV2(ASlib):
                         Node(self.refpoints["C"+str(i+5)+"_port_fluxline_corner"]),
                         Node(self.refpoints["C"+str(i+5)+"_port_fluxline"])
                         ])
-
-    
-
-    def _produce_readout_resonator(self, qport, length):
-        w = 250
-        r = 200
-        h = 1600
-
-        length -= self.insert_cell(
-            WaveguideComposite,
-            nodes=[Node(pya.DPoint(qport.x - (w+r), self.readout_sep + 2*self.b + self.a)),
-                   Node(pya.DPoint(qport.x, self.readout_sep + 2*self.b + self.a)),
-                   Node(pya.DPoint(qport.x, r + self.readout_sep + 2*self.b + self.a))],
-            r=r)[0].cell.length()
-        
-        length -= self.insert_cell(
-            WaveguideComposite,
-            nodes=[Node(pya.DPoint(qport.x, h)),
-                   Node(qport)],
-            )[0].cell.length()
-        
-        self.insert_cell(
-            Meander,
-            start_point=pya.DPoint(qport.x, r + self.readout_sep + 2*self.b + self.a),
-            end_point=pya.DPoint(qport.x, h),
-            length=length,
-            meanders=5,
-        )
-
-        
-    def _produce_fluxline(self):
-        distance = 300
-        # Q0
-        self.insert_cell(
-            WaveguideComposite,
-            nodes=[Node(self.refpoints["launcher_U1_base"]),
-                   Node(pya.DPoint(self.refpoints["launcher_U1_base"].x, self.refpoints["Q0_port_fluxline"].y + distance)),
-                   Node(pya.DPoint(self.refpoints["Q0_port_fluxline"].x, self.refpoints["Q0_port_fluxline"].y + distance)),
-                   Node(self.refpoints["Q0_port_fluxline"])
-                   ])
-        
-        # C0
-        vec = self.refpoints["C0_port_fluxline_corner"] - self.refpoints["C0_port_fluxline"]
-        pt = self.refpoints["C0_port_fluxline"] + vec * (
-              abs(self.refpoints["launcher_U2_base"].x - self.refpoints["C0_port_fluxline"].x) / abs(self.refpoints["C0_port_fluxline_corner"].x - self.refpoints["C0_port_fluxline"].x)
-        )
-        self.insert_cell(
-            WaveguideComposite,
-            nodes=[Node(self.refpoints["launcher_U2_base"]),
-                   Node(pt),
-                   Node(self.refpoints["C0_port_fluxline"])
-                   ])
-        
-
-        # Q1
-        self.insert_cell(
-            WaveguideComposite,
-            nodes=[Node(self.refpoints["launcher_U3_base"]),
-                   Node(pya.DPoint(self.refpoints["launcher_U3_base"].x, self.refpoints["launcher_U3_base"].y - 200)),
-                   Node(pya.DPoint(self.refpoints["Q1_port_fluxline"].x, self.refpoints["Q1_port_fluxline"].y + distance)),
-                   Node(self.refpoints["Q1_port_fluxline"])
-                   ])
-        
-        # Q2
-        self.insert_cell(
-            WaveguideComposite,
-            nodes=[Node(self.refpoints["launcher_R1_base"]),
-                   Node(pya.DPoint(self.refpoints["launcher_R1_base"].x - 500, self.refpoints["launcher_R1_base"].y)),
-                   Node(pya.DPoint(self.refpoints["launcher_R1_base"].x - 500, self.refpoints["launcher_R1_base"].y + 1200)),
-                   Node(pya.DPoint(self.refpoints["launcher_R1_base"].x - 1700, self.refpoints["launcher_R1_base"].y + 1200)),
-                   Node(pya.DPoint(self.refpoints["Q2_port_fluxline"].x, self.refpoints["Q2_port_fluxline"].y + distance)),
-                   Node(self.refpoints["Q2_port_fluxline"])
-                   ])
-        
+       
