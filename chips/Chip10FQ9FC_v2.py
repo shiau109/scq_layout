@@ -90,7 +90,8 @@ class Chip10FQ9FCV2(ASlib):
             "finger_width":3.3,
             "finger_gap":3.3,
             "finger_length":100,
-            "taper_length":150
+            "taper_length":150,
+            "corner_r":0
         }
 
         if self.simulation_mode in [0, 4]:
