@@ -59,7 +59,7 @@ class Chip10FQ9FCV2(ASlib):
             c_visible = True
 
         x, y = -4220, -5120 # Position of left qubit
-        self.insert_cell(FloatingQubit, pya.Trans(x, y) * pya.Trans.R90, "Q0", flip_squid=False, fluxline_offset=12, xyline_at_center=True, xyline_distance=2.6, xyline_offset=200, island1_side_hole=[self.grq_length, 30], coupler_at_island2=True)
+        self.insert_cell(FloatingQubit, pya.Trans(x, y) * pya.Trans.R90, "Q0", flip_squid=False, fluxline_offset=12, xyline_at_center=True, xyline_distance=10, xyline_offset=200, island1_side_hole=[self.grq_length, 30], coupler_at_island2=True)
         
         t, corner1, corner2, flip = pya.Trans.R90, "corner2", "corner4", True
         for i in range(9):
@@ -72,7 +72,7 @@ class Chip10FQ9FCV2(ASlib):
             if i == 4:
                 t, corner1, corner2, flip = pya.Trans.R270, "corner4", "corner2", False
 
-            cell = self.add_element(FloatingQubit, flip_squid=(not flip), fluxline_offset=12, xyline_at_center=True, xyline_distance=2.6, xyline_offset=200, island1_side_hole=[self.grq_length, 30], coupler_at_island2=True)
+            cell = self.add_element(FloatingQubit, flip_squid=(not flip), fluxline_offset=12, xyline_at_center=True, xyline_distance=10, xyline_offset=200, island1_side_hole=[self.grq_length, 30], coupler_at_island2=True)
             self.insert_cell(cell, pya.DTrans(self.refpoints["C"+str(i)+"_qubit2"] - self.get_refpoints(cell, t)[corner2]) * t, "Q"+str(i+1))
 
 
